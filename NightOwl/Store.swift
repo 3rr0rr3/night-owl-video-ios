@@ -85,7 +85,7 @@ struct Save: Codable {
         let i = guest.characterIndex
         if !story.talked.contains(i) { story.talked.append(i) }
         speakingGuest = guest.id
-        let words = !storyFinished && chapter.lead == i ? chapter.text : guest.regular.lines[min(story.chapter / 3, 2)]
+        let words = !storyFinished && chapter.lead == i ? Storybook.sceneLines[story.chapter] : guest.regular.lines[min(story.chapter / 3, 2)]
         say("\(guest.name): “\(words)”")
         Task { try? await Task.sleep(nanoseconds: 4_000_000_000); if self.speakingGuest == guest.id { self.speakingGuest = nil } }
     }
@@ -161,9 +161,10 @@ struct Save: Codable {
     func checkout() {
         guard let g = s.guests.first, let i = g.movie, g.paid else { return }
         guard change == 10 - price else { say("Check your change. The total is $\(price), paid $10."); return }
-        story.rentals += 1; if g.snack { story.snacks += 1 }; cashBurst(price)
-        s.movies[i].stock -= 1; s.rentals.append(i); s.money += price; s.sales += price; s.served += 1; s.xp += 8; s.guests.removeFirst(); change = 0
-        say("Be kind, rewind! Rental complete. +$\(price)")
+        let total = price
+        story.rentals += 1; if g.snack { story.snacks += 1 }; cashBurst(total)
+        s.movies[i].stock -= 1; s.rentals.append(i); s.money += total; s.sales += total; s.served += 1; s.xp += 8; s.guests.removeFirst(); change = 0
+        say("Be kind, rewind! Rental complete. +$\(total)")
     }
     func reserve() {
         guard let g = s.guests.first, g.movie == nil else { return }

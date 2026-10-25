@@ -54,6 +54,15 @@ struct StoryGoal: Identifiable {
     var complete: Bool { value >= target }
 }
 enum Storybook {
+    static let sceneLines = [
+        "June gave me a spare bulb for the owl sign. Said you'd need it one day. Let's get your first customers through the door.",
+        "Before the Rialto closed, your aunt and I screened films right outside this shop. What do you say we give Maple Street one more movie night?",
+        "The whole night crew got caught in the rain. Three movies, some popcorn, and somewhere to sit. That would mean more than you know.",
+        "This unlabeled tape has June's handwriting on the case. Check the returns carefully. I think I can bring that old screening back to life.",
+        "Show me a shop with a future: a team, a little care, and people coming through the door. That's the story I want to write.",
+        "Dana's on the radio, Marisol has the truck, and I've got the food. Cover the projector rental, and we'll make this happen together.",
+        "Projector's warm. The chairs are full. Finish up here, then come outside. June would've loved to see this."
+    ]
     static let chapters: [Chapter] = [
         Chapter(title: "The Keys to Night Owl", speaker: "Aunt June's letter", text: "You inherit a struggling video shop on Maple Street in 1994. June has left one request: keep a light on for the neighborhood. A property company wants the block, and the lease renewal is coming. First, remind people why they loved this little shop.", lead: 0, reward: 20),
         Chapter(title: "The Last Screening", speaker: "Frank", text: "Before the Rialto closed, June and Frank screened movies outside Night Owl every summer. Frank wants one more movie night. Ask the regulars what they remember, order a fresh tape, and choose the double bill that will bring them back together.", lead: 5, reward: 25),

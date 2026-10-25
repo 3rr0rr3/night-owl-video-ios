@@ -22,6 +22,7 @@ import Foundation
         store.s.guests = [Guest(name: "Snack", genre: "COMEDY", snack: true)]
         store.recommend(2); store.scan(); store.payment(); store.change = 3; store.checkout()
         assert(store.s.money == 161 && store.s.served == 2, "Popcorn total and change")
+        assert(store.message.hasSuffix("+$7"), "Receipt message matches the popcorn rental total")
         store.s.returns = [Tape(movie: 0, late: true, damaged: true)]
         store.process("shelve")
         assert(store.s.returns.count == 1, "Incomplete returns cannot be shelved")

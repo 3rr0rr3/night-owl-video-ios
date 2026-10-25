@@ -10,12 +10,14 @@ cp NightOwl/Info.plist "$APP/Info.plist"
 DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for a in d["devices"].values() for x in a if x["name"].startswith("iPhone")))')
 xcrun simctl boot "$DEVICE"
 xcrun simctl bootstatus "$DEVICE" -b
-xcrun simctl status_bar "$DEVICE" override --time '9:41' --batteryState charged --batteryLevel 100
-xcrun simctl install "$DEVICE" "$APP"
+echo "Installing character capture app"
+python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","install",sys.argv[1],sys.argv[2]],check=True,timeout=180)' "$DEVICE" "$APP"
+echo "Launching character view"
 xcrun simctl launch "$DEVICE" com.nightowl.videostore --characters
 sleep 8
 xcrun simctl io "$DEVICE" screenshot build/character-lineup.png
 xcrun simctl terminate "$DEVICE" com.nightowl.videostore
+echo "Launching character view"
 xcrun simctl launch "$DEVICE" com.nightowl.videostore
 sleep 8
 xcrun simctl io "$DEVICE" screenshot build/characters-in-store.png

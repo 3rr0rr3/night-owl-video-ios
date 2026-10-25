@@ -44,7 +44,7 @@ struct Cutout: View {
             draw(polygon([CGPoint(x: 20,y: 90),CGPoint(x: 60,y: 90),CGPoint(x: 57,y: 121),CGPoint(x: 44,y: 121),CGPoint(x: 40,y: 102),CGPoint(x: 36,y: 121),CGPoint(x: 22,y: 121)]), Color(red: 0.19, green: 0.24, blue: 0.31))
             draw(Path(roundedRect: CGRect(x: 17, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
             draw(Path(roundedRect: CGRect(x: 43, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
-            if v == 2 || v == 4 { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
+            if (v == 2 || v == 4) && !(extra && v == 2) { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
             draw(Path(roundedRect: CGRect(x: 33, y: 43, width: 14, height: 19), cornerRadius: 3), skin)
             let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
             draw(torso, shirt, width: 1.8)
@@ -113,7 +113,7 @@ struct Cutout: View {
             if extra && v == 1 { painter.fill(oval(29, 9, 22, 9), with: .color(skin)) }
             if extra && v == 3 { draw(oval(20, 4, 39, 18), hair, width: 1.1) }
             if v == 2 && !extra { for x in [25, 32, 39, 46, 53] { draw(oval(CGFloat(x) - 3, 8, 9, 9), hair, width: 0.6) } }
-            if v == 0 || v == 3 {
+            if (v == 0 || v == 3) && !(extra && v == 0) {
                 let beard = polygon([CGPoint(x: 26,y: 34),CGPoint(x: 30,y: 39),CGPoint(x: 35,y: 40),CGPoint(x: 40,y: 38),CGPoint(x: 46,y: 40),CGPoint(x: 51,y: 38),CGPoint(x: 55,y: 34),CGPoint(x: 52,y: 46),CGPoint(x: 45,y: 50),CGPoint(x: 36,y: 50),CGPoint(x: 28,y: 45)])
                 painter.fill(beard, with: .color(hair.opacity(v == 0 ? 0.65 : 0.9)))
             }
@@ -136,7 +136,7 @@ struct Cutout: View {
                 line([CGPoint(x: 23,y: 26),CGPoint(x: 26,y: 27)])
                 line([CGPoint(x: 55,y: 27),CGPoint(x: 57,y: 26)])
             }
-            if v == 5 {
+            if v == 5 && !extra {
                 draw(polygon([CGPoint(x: 31,y: 40),CGPoint(x: 39,y: 38),CGPoint(x: 47,y: 40),CGPoint(x: 48,y: 43),CGPoint(x: 40,y: 41),CGPoint(x: 32,y: 43)]), hair, width: 0.5)
                 line([CGPoint(x: 30,y: 19),CGPoint(x: 34,y: 18)], ink.opacity(0.35), width: 0.6)
                 line([CGPoint(x: 46,y: 18),CGPoint(x: 50,y: 19)], ink.opacity(0.35), width: 0.6)
@@ -171,7 +171,7 @@ struct ShopArt: View {
                     HStack { Text("NIGHT OWL").font(.system(size: 23, weight: .black, design: .rounded)).foregroundStyle(mint); Spacer(); Text("VHS • 1994").font(.caption.bold()).foregroundStyle(gold) }.padding(18)
                     HStack(spacing: 13) {
                         shelf("CULT CLASSICS", 0); shelf("NEW RELEASES", 3)
-                        VStack { Image(systemName: "moon.stars.fill").font(.largeTitle).foregroundStyle(gold); Text(game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT").font(.system(size: 9, weight: .heavy)); Text("2 NIGHTS\n$4").font(.system(size: 19, weight: .black, design: .rounded)).foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
+                        VStack { Image(systemName: "moon.stars.fill").font(.largeTitle).foregroundStyle(gold); Text(game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT").font(.system(size: 9, weight: .heavy)); VStack(spacing: 1) { Text("2 NIGHTS").font(.system(size: 10, weight: .black)).lineLimit(1); Text("$4").font(.system(size: 22, weight: .black, design: .rounded)) }.foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
                     }.padding(.horizontal, 16)
                     Rectangle().fill(Color(red: 0.29, green: 0.26, blue: 0.38)).frame(height: 95).overlay(alignment: .bottom) {
                         HStack(spacing: 1) { ForEach(Array(game.s.guests.prefix(4))) { guest in
@@ -320,7 +320,7 @@ struct StoryPanel: View {
                 Text("CHAPTER \(game.story.chapter + 1) OF 7").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
                 HStack(alignment: .top, spacing: 12) {
                     Cutout(index: game.chapter.lead).scaleEffect(0.8).frame(width: 66,height: 110)
-                    VStack(alignment: .leading, spacing: 7) { Text(game.chapter.title).font(.title3.bold()); Text(game.chapter.speaker).font(.caption.bold()).foregroundStyle(mint) }
+                    VStack(alignment: .leading, spacing: 7) { Text(game.chapter.title).font(.title3.bold()).fixedSize(horizontal: false, vertical: true); Text(game.chapter.speaker).font(.caption.bold()).foregroundStyle(mint) }
                 }
                 Text(game.chapter.text).font(.subheadline).lineSpacing(4)
                 VStack(alignment: .leading, spacing: 10) {

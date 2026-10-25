@@ -23,7 +23,7 @@ source += '''
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 35) {
                         ForEach(0..<6) { n in
                             VStack(spacing: 12) {
-                                Cutout(index: n).scaleEffect(1.65).frame(width: 140, height: 180)
+                                Cutout(index: n).scaleEffect(1.35).frame(width: 140, height: 140)
                                 Text(["MILO", "JULES", "BEA", "OTIS", "NINA", "FRANK"][n]).font(.system(size: 12, weight: .black, design: .monospaced)).foregroundStyle(palette[n])
                             }
                         }

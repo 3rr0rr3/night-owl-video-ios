@@ -20,10 +20,10 @@ source += '''
                 VStack(spacing: 25) {
                     Text("NIGHT OWL").font(.system(size: 30, weight: .black, design: .rounded)).foregroundStyle(mint)
                     Text("MEET YOUR CUSTOMERS").font(.system(size: 11, weight: .bold, design: .monospaced)).tracking(2).foregroundStyle(gold)
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 35) {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 25) {
                         ForEach(0..<6) { n in
                             VStack(spacing: 12) {
-                                Cutout(index: n).scaleEffect(1.35).frame(width: 140, height: 140)
+                                Cutout(index: n).scaleEffect(1.15).frame(width: 140, height: 150)
                                 Text(["MILO", "JULES", "BEA", "OTIS", "NINA", "FRANK"][n]).font(.system(size: 12, weight: .black, design: .monospaced)).foregroundStyle(palette[n])
                             }
                         }

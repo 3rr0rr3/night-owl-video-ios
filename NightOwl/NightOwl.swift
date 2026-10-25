@@ -15,75 +15,98 @@ struct Cutout: View {
     var body: some View {
         Canvas { context, _ in
             let painter = context
-            let variant = index % 6
-            let skin = [Color(red: 0.96, green: 0.78, blue: 0.58), Color(red: 0.82, green: 0.55, blue: 0.38), Color(red: 0.97, green: 0.71, blue: 0.61)][index % 3]
-            let hair = [Color(red: 0.30, green: 0.17, blue: 0.12), gold, Color(red: 0.69, green: 0.24, blue: 0.10), Color(red: 0.13, green: 0.12, blue: 0.19), Color(red: 0.38, green: 0.20, blue: 0.13), Color(red: 0.52, green: 0.54, blue: 0.61)][variant]
+            let v = index % 6
+            let skin = [Color(red: 0.89, green: 0.68, blue: 0.49), Color(red: 0.64, green: 0.41, blue: 0.28), Color(red: 0.95, green: 0.74, blue: 0.63)][v % 3]
+            let hair = [Color(red: 0.27, green: 0.18, blue: 0.14), Color(red: 0.32, green: 0.22, blue: 0.15), Color(red: 0.57, green: 0.25, blue: 0.13), ink, Color(red: 0.26, green: 0.16, blue: 0.12), Color(red: 0.62, green: 0.63, blue: 0.66)][v]
+            let shirt = [Color(red: 0.34, green: 0.63, blue: 0.54), Color(red: 0.58, green: 0.33, blue: 0.27), Color(red: 0.77, green: 0.57, blue: 0.22), Color(red: 0.27, green: 0.47, blue: 0.62), Color(red: 0.61, green: 0.29, blue: 0.39), Color(red: 0.40, green: 0.35, blue: 0.49)][v]
             func oval(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> Path { Path(ellipseIn: CGRect(x: x, y: y, width: w, height: h)) }
-            func draw(_ path: Path, _ color: Color, width: CGFloat = 1.8) {
-                painter.fill(path, with: .color(color))
-                painter.stroke(path, with: .color(ink), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+            func polygon(_ points: [CGPoint]) -> Path { Path { p in p.move(to: points[0]); for pt in points.dropFirst() { p.addLine(to: pt) }; p.closeSubpath() } }
+            func draw(_ path: Path, _ color: Color, width: CGFloat = 1.4) {
+                painter.fill(path, with: .color(color)); painter.stroke(path, with: .color(ink), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
             }
-            func line(_ points: [CGPoint], _ color: Color = ink, width: CGFloat = 2) {
-                let p = Path { p in guard let first = points.first else { return }; p.move(to: first); for point in points.dropFirst() { p.addLine(to: point) } }
-                painter.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
+            func line(_ points: [CGPoint], _ color: Color = ink, width: CGFloat = 1.1) {
+                let path = Path { p in p.move(to: points[0]); for pt in points.dropFirst() { p.addLine(to: pt) } }
+                painter.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
             }
-            painter.fill(oval(8, 97, 64, 7), with: .color(.black.opacity(0.25)))
-            draw(oval(18, 91, 21, 10), ink)
-            draw(oval(42, 91, 21, 10), ink)
-            let jacket = Path { p in
-                p.move(to: CGPoint(x: 25, y: 55)); p.addQuadCurve(to: CGPoint(x: 8, y: 76), control: CGPoint(x: 6, y: 56))
-                p.addLine(to: CGPoint(x: 10, y: 94)); p.addQuadCurve(to: CGPoint(x: 70, y: 94), control: CGPoint(x: 40, y: 101))
-                p.addLine(to: CGPoint(x: 73, y: 76)); p.addQuadCurve(to: CGPoint(x: 55, y: 55), control: CGPoint(x: 74, y: 59)); p.closeSubpath()
+            painter.fill(oval(9, 123, 62, 6), with: .color(.black.opacity(0.25)))
+            // Long trouser legs, adult shoulder width, and a visible neck replace the toddler silhouette.
+            draw(polygon([CGPoint(x: 20,y: 90),CGPoint(x: 60,y: 90),CGPoint(x: 57,y: 121),CGPoint(x: 44,y: 121),CGPoint(x: 40,y: 102),CGPoint(x: 36,y: 121),CGPoint(x: 22,y: 121)]), Color(red: 0.19, green: 0.24, blue: 0.31))
+            draw(Path(roundedRect: CGRect(x: 17, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
+            draw(Path(roundedRect: CGRect(x: 43, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
+            if v == 2 || v == 4 { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
+            draw(Path(roundedRect: CGRect(x: 33, y: 43, width: 14, height: 19), cornerRadius: 3), skin)
+            let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
+            draw(torso, shirt, width: 1.8)
+            draw(Path(roundedRect: CGRect(x: 10, y: 92, width: 8, height: 13), cornerRadius: 3), skin)
+            draw(Path(roundedRect: CGRect(x: 63, y: 92, width: 8, height: 13), cornerRadius: 3), skin)
+            line([CGPoint(x: 15,y: 73),CGPoint(x: 14,y: 91)], ink.opacity(0.5))
+            line([CGPoint(x: 66,y: 73),CGPoint(x: 67,y: 91)], ink.opacity(0.5))
+            if v == 1 || v == 4 {
+                draw(polygon([CGPoint(x: 32,y: 55),CGPoint(x: 40,y: 61),CGPoint(x: 48,y: 55),CGPoint(x: 45,y: 94),CGPoint(x: 35,y: 94)]), Color(red: 0.91, green: 0.87, blue: 0.78), width: 0.6)
+                line([CGPoint(x: 30,y: 56),CGPoint(x: 25,y: 70),CGPoint(x: 34,y: 73),CGPoint(x: 40,y: 95)], width: 1.3)
+                line([CGPoint(x: 50,y: 56),CGPoint(x: 55,y: 70),CGPoint(x: 46,y: 73),CGPoint(x: 40,y: 95)], width: 1.3)
+            } else if v == 2 {
+                painter.stroke(Path(ellipseIn: CGRect(x: 31, y: 54, width: 18, height: 10)), with: .color(ink), lineWidth: 1.2)
+                line([CGPoint(x: 31,y: 61),CGPoint(x: 40,y: 74),CGPoint(x: 49,y: 61)], gold, width: 0.9)
+                draw(oval(38, 73, 4, 4), gold, width: 0.6)
+            } else {
+                draw(polygon([CGPoint(x: 31,y: 54),CGPoint(x: 40,y: 61),CGPoint(x: 34,y: 67),CGPoint(x: 28,y: 57)]), shirt.opacity(0.8), width: 0.9)
+                draw(polygon([CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 61),CGPoint(x: 46,y: 67),CGPoint(x: 52,y: 57)]), shirt.opacity(0.8), width: 0.9)
+                line([CGPoint(x: 40,y: 62),CGPoint(x: 40,y: 97)], ink.opacity(0.55), width: 0.8)
+                for y in [72, 82, 92] { painter.fill(oval(42, CGFloat(y), 1.6, 1.6), with: .color(ink)) }
+                draw(Path(roundedRect: CGRect(x: 48, y: 73, width: 8, height: 9), cornerRadius: 1), shirt, width: 0.7)
             }
-            draw(jacket, palette[variant], width: 2.2)
-            line([CGPoint(x: 19, y: 72), CGPoint(x: 17, y: 87)], ink.opacity(0.55), width: 1.4)
-            line([CGPoint(x: 62, y: 72), CGPoint(x: 64, y: 87)], ink.opacity(0.55), width: 1.4)
-            draw(oval(7, 85, 12, 10), skin)
-            draw(oval(62, 85, 12, 10), skin)
-            line([CGPoint(x: 40, y: 66), CGPoint(x: 40, y: 94)], ink.opacity(0.65), width: 1.4)
-            for y in [74, 82, 90] { painter.fill(oval(43, CGFloat(y), 2, 2), with: .color(ink)) }
-            draw(oval(5, 29, 13, 16), skin)
-            draw(oval(63, 29, 13, 16), skin)
-            draw(oval(11, 5, 59, 61), skin, width: 2.3)
-            painter.fill(oval(16, 45, 12, 7), with: .color(coral.opacity(0.35)))
-            painter.fill(oval(55, 45, 12, 7), with: .color(coral.opacity(0.35)))
-            // Six deliberately uneven hairstyles: spikes, swoop, curls, crop, bob, and a quiff.
-            let hairPoints: [[CGPoint]] = [
-                [CGPoint(x: 12,y: 26), CGPoint(x: 11,y: 10), CGPoint(x: 21,y: 12), CGPoint(x: 21,y: 1), CGPoint(x: 33,y: 8), CGPoint(x: 40,y: 0), CGPoint(x: 47,y: 8), CGPoint(x: 60,y: 3), CGPoint(x: 68,y: 17), CGPoint(x: 64,y: 24), CGPoint(x: 53,y: 16), CGPoint(x: 44,y: 21), CGPoint(x: 31,y: 14), CGPoint(x: 24,y: 22)],
-                [CGPoint(x: 12,y: 27), CGPoint(x: 13,y: 12), CGPoint(x: 25,y: 3), CGPoint(x: 48,y: 2), CGPoint(x: 66,y: 11), CGPoint(x: 69,y: 25), CGPoint(x: 58,y: 19), CGPoint(x: 56,y: 12), CGPoint(x: 43,y: 23), CGPoint(x: 29,y: 25), CGPoint(x: 36,y: 13), CGPoint(x: 23,y: 19)],
-                [CGPoint(x: 11,y: 29), CGPoint(x: 9,y: 15), CGPoint(x: 17,y: 9), CGPoint(x: 26,y: 4), CGPoint(x: 44,y: 3), CGPoint(x: 59,y: 8), CGPoint(x: 70,y: 19), CGPoint(x: 67,y: 30), CGPoint(x: 57,y: 18), CGPoint(x: 47,y: 24), CGPoint(x: 39,y: 16), CGPoint(x: 29,y: 22), CGPoint(x: 21,y: 17)],
-                [CGPoint(x: 12,y: 25), CGPoint(x: 13,y: 12), CGPoint(x: 25,y: 5), CGPoint(x: 56,y: 5), CGPoint(x: 68,y: 15), CGPoint(x: 68,y: 27), CGPoint(x: 61,y: 19), CGPoint(x: 54,y: 21), CGPoint(x: 47,y: 17), CGPoint(x: 40,y: 20), CGPoint(x: 32,y: 17), CGPoint(x: 25,y: 21), CGPoint(x: 19,y: 18)],
-                [CGPoint(x: 11,y: 43), CGPoint(x: 8,y: 20), CGPoint(x: 18,y: 7), CGPoint(x: 39,y: 1), CGPoint(x: 60,y: 7), CGPoint(x: 72,y: 22), CGPoint(x: 70,y: 47), CGPoint(x: 63,y: 44), CGPoint(x: 61,y: 19), CGPoint(x: 42,y: 14), CGPoint(x: 25,y: 26), CGPoint(x: 20,y: 17), CGPoint(x: 18,y: 43)],
-                [CGPoint(x: 12,y: 26), CGPoint(x: 13,y: 14), CGPoint(x: 25,y: 9), CGPoint(x: 27,y: 1), CGPoint(x: 39,y: 5), CGPoint(x: 46,y: 0), CGPoint(x: 59,y: 7), CGPoint(x: 68,y: 19), CGPoint(x: 66,y: 28), CGPoint(x: 57,y: 18), CGPoint(x: 45,y: 20), CGPoint(x: 34,y: 14), CGPoint(x: 24,y: 22)]
+            line([CGPoint(x: 21,y: 98),CGPoint(x: 59,y: 98)], ink, width: 2.5)
+            draw(Path(roundedRect: CGRect(x: 37, y: 96, width: 6, height: 4), cornerRadius: 0.5), gold, width: 0.6)
+            // A longer face, tapered jaw, smaller eyes, nose bridge and age lines read as adults.
+            draw(oval(18, 25, 7, 12), skin)
+            draw(oval(55, 25, 7, 12), skin)
+            let face = Path { p in
+                p.move(to: CGPoint(x: 24,y: 16)); p.addQuadCurve(to: CGPoint(x: 56,y: 16), control: CGPoint(x: 40,y: 0))
+                p.addLine(to: CGPoint(x: 57,y: 34)); p.addLine(to: CGPoint(x: 53,y: 46)); p.addQuadCurve(to: CGPoint(x: 40,y: 52), control: CGPoint(x: 49,y: 51))
+                p.addQuadCurve(to: CGPoint(x: 27,y: 46), control: CGPoint(x: 32,y: 51)); p.addLine(to: CGPoint(x: 23,y: 34)); p.closeSubpath()
+            }
+            draw(face, skin, width: 1.7)
+            let hairlines: [[CGPoint]] = [
+                [CGPoint(x: 23,y: 31),CGPoint(x: 21,y: 15),CGPoint(x: 28,y: 8),CGPoint(x: 45,y: 6),CGPoint(x: 56,y: 12),CGPoint(x: 58,y: 30),CGPoint(x: 53,y: 25),CGPoint(x: 52,y: 15),CGPoint(x: 31,y: 18),CGPoint(x: 27,y: 24)],
+                [CGPoint(x: 23,y: 30),CGPoint(x: 21,y: 16),CGPoint(x: 30,y: 8),CGPoint(x: 48,y: 7),CGPoint(x: 58,y: 18),CGPoint(x: 57,y: 30),CGPoint(x: 53,y: 21),CGPoint(x: 46,y: 16),CGPoint(x: 28,y: 20),CGPoint(x: 27,y: 30)],
+                [CGPoint(x: 22,y: 36),CGPoint(x: 19,y: 18),CGPoint(x: 28,y: 9),CGPoint(x: 44,y: 6),CGPoint(x: 58,y: 17),CGPoint(x: 59,y: 37),CGPoint(x: 54,y: 31),CGPoint(x: 52,y: 20),CGPoint(x: 41,y: 15),CGPoint(x: 28,y: 24),CGPoint(x: 26,y: 37)],
+                [CGPoint(x: 23,y: 28),CGPoint(x: 22,y: 16),CGPoint(x: 27,y: 10),CGPoint(x: 47,y: 8),CGPoint(x: 56,y: 15),CGPoint(x: 57,y: 29),CGPoint(x: 53,y: 22),CGPoint(x: 52,y: 16),CGPoint(x: 29,y: 17),CGPoint(x: 27,y: 28)],
+                [CGPoint(x: 22,y: 44),CGPoint(x: 20,y: 17),CGPoint(x: 29,y: 7),CGPoint(x: 45,y: 6),CGPoint(x: 58,y: 16),CGPoint(x: 59,y: 45),CGPoint(x: 54,y: 43),CGPoint(x: 52,y: 18),CGPoint(x: 40,y: 14),CGPoint(x: 28,y: 23),CGPoint(x: 27,y: 44)],
+                [CGPoint(x: 23,y: 30),CGPoint(x: 21,y: 17),CGPoint(x: 27,y: 11),CGPoint(x: 33,y: 10),CGPoint(x: 36,y: 14),CGPoint(x: 44,y: 14),CGPoint(x: 48,y: 10),CGPoint(x: 55,y: 14),CGPoint(x: 58,y: 30),CGPoint(x: 54,y: 28),CGPoint(x: 50,y: 18),CGPoint(x: 46,y: 20),CGPoint(x: 34,y: 20),CGPoint(x: 29,y: 17),CGPoint(x: 27,y: 30)]
             ]
-            let hairPath = Path { p in let points = hairPoints[variant]; p.move(to: points[0]); for point in points.dropFirst() { p.addLine(to: point) }; p.closeSubpath() }
-            draw(hairPath, hair, width: 1.7)
-            if variant == 2 {
-                for x in [17, 28, 39, 50, 61] { draw(oval(CGFloat(x) - 5, 4 + CGFloat(x % 3), 13, 13), hair, width: 1.2) }
+            draw(polygon(hairlines[v]), hair, width: 1.2)
+            if v == 2 { for x in [25, 32, 39, 46, 53] { draw(oval(CGFloat(x) - 3, 8, 9, 9), hair, width: 0.6) } }
+            if v == 0 || v == 3 {
+                let beard = polygon([CGPoint(x: 26,y: 34),CGPoint(x: 30,y: 39),CGPoint(x: 35,y: 40),CGPoint(x: 40,y: 38),CGPoint(x: 46,y: 40),CGPoint(x: 51,y: 38),CGPoint(x: 55,y: 34),CGPoint(x: 52,y: 46),CGPoint(x: 45,y: 50),CGPoint(x: 36,y: 50),CGPoint(x: 28,y: 45)])
+                painter.fill(beard, with: .color(hair.opacity(v == 0 ? 0.65 : 0.9)))
             }
-            // Oversized eyes, offset pupils and raised brows make each face more expressive.
-            draw(oval(20, 24, 21, 25), .white, width: 0.9)
-            draw(oval(40, 23, 21, 25), .white, width: 0.9)
-            let gaze = CGFloat(variant % 3 - 1) * 1.5
-            painter.fill(oval(29 + gaze, 33, 6, 8), with: .color(ink))
-            painter.fill(oval(48 + gaze, 32, 6, 8), with: .color(ink))
-            painter.fill(oval(30 + gaze, 34, 2, 2), with: .color(.white))
-            painter.fill(oval(49 + gaze, 33, 2, 2), with: .color(.white))
-            line([CGPoint(x: 22,y: 21), CGPoint(x: 32,y: variant % 2 == 0 ? 17 : 20)], width: 2.2)
-            line([CGPoint(x: 49,y: 18), CGPoint(x: 59,y: 21)], width: 2.2)
-            painter.fill(oval(38, 44, 7, 5), with: .color(Color(red: 0.68, green: 0.38, blue: 0.27).opacity(0.5)))
-            let smile = Path { p in
-                p.move(to: CGPoint(x: 29, y: 52)); p.addQuadCurve(to: CGPoint(x: 54, y: 51), control: CGPoint(x: 41, y: variant % 2 == 0 ? 57 : 53))
-                p.addQuadCurve(to: CGPoint(x: 29, y: 52), control: CGPoint(x: 43, y: variant % 2 == 0 ? 70 : 65)); p.closeSubpath()
+            draw(oval(28, 26, 10, 7), .white, width: 0.65)
+            draw(oval(43, 26, 10, 7), .white, width: 0.65)
+            painter.fill(oval(32, 27, 3.5, 5), with: .color(ink))
+            painter.fill(oval(46, 27, 3.5, 5), with: .color(ink))
+            line([CGPoint(x: 28,y: 23),CGPoint(x: 36,y: 22)], hair, width: 1.6)
+            line([CGPoint(x: 44,y: 22),CGPoint(x: 52,y: 23)], hair, width: 1.6)
+            line([CGPoint(x: 40,y: 27),CGPoint(x: 38,y: 36),CGPoint(x: 43,y: 37)], ink.opacity(0.65), width: 0.85)
+            if v == 1 || v == 5 {
+                painter.stroke(Path(roundedRect: CGRect(x: 26, y: 24, width: 14, height: 11), cornerRadius: 3), with: .color(ink), lineWidth: 1.2)
+                painter.stroke(Path(roundedRect: CGRect(x: 41, y: 24, width: 14, height: 11), cornerRadius: 3), with: .color(ink), lineWidth: 1.2)
+                line([CGPoint(x: 40,y: 28),CGPoint(x: 41,y: 28)])
+                line([CGPoint(x: 23,y: 26),CGPoint(x: 26,y: 27)])
+                line([CGPoint(x: 55,y: 27),CGPoint(x: 57,y: 26)])
             }
-            draw(smile, ink, width: 1.1)
-            painter.fill(Path(roundedRect: CGRect(x: 34, y: 53, width: 15, height: 3), cornerRadius: 1), with: .color(.white))
-            if variant % 2 == 0 { painter.fill(oval(39, 59, 9, 3), with: .color(coral)) }
-            if variant == 0 || variant == 4 {
-                for x in [20, 24, 58, 62] { painter.fill(oval(CGFloat(x), 47, 1.6, 1.6), with: .color(hair.opacity(0.7))) }
+            if v == 5 {
+                draw(polygon([CGPoint(x: 31,y: 40),CGPoint(x: 39,y: 38),CGPoint(x: 47,y: 40),CGPoint(x: 48,y: 43),CGPoint(x: 40,y: 41),CGPoint(x: 32,y: 43)]), hair, width: 0.5)
+                line([CGPoint(x: 30,y: 19),CGPoint(x: 34,y: 18)], ink.opacity(0.35), width: 0.6)
+                line([CGPoint(x: 46,y: 18),CGPoint(x: 50,y: 19)], ink.opacity(0.35), width: 0.6)
             }
-        }.frame(width: 80, height: 105)
-        .accessibilityLabel("Hatless cartoon customer")
+            let smile = Path { p in p.move(to: CGPoint(x: 34,y: 43)); p.addQuadCurve(to: CGPoint(x: 47,y: 42), control: CGPoint(x: 41,y: 47)) }
+            painter.stroke(smile, with: .color(v == 2 || v == 4 ? Color(red: 0.53, green: 0.19, blue: 0.22) : ink), style: StrokeStyle(lineWidth: 1.1, lineCap: .round))
+            line([CGPoint(x: 29,y: 36),CGPoint(x: 27,y: 39)], ink.opacity(0.3), width: 0.6)
+            line([CGPoint(x: 52,y: 36),CGPoint(x: 54,y: 39)], ink.opacity(0.3), width: 0.6)
+            line([CGPoint(x: 36,y: 48),CGPoint(x: 44,y: 48)], ink.opacity(0.25), width: 0.6)
+        }.frame(width: 80, height: 130)
+        .accessibilityLabel("Adult cartoon customer")
     }
 }
 struct ShopArt: View {

@@ -12,3 +12,10 @@ On a Mac with Xcode command-line tools: `bash scripts/build-ipa.sh`.
 
 ## Scope
 This first playable version implements the rental/return management loop. It is a touch-based 2D game, with original titles and characters. It does not reproduce Retro Rewind's full 3D world, thousands of tapes, seasonal art, or every advanced feature. Reference task ideas: https://store.steampowered.com/app/3552140/Retro_Rewind_Video_Store_Simulator/
+
+## Story & animation update (1.3)
+There are now twelve adult regulars with stable portraits, jobs, film preferences and conversations. The Story tab follows seven playable chapters: inherit Aunt June's shop, reconnect the neighborhood, survive a rainy Friday, recover an old home movie, recruit a team, fund a projector and hold Maple Street movie night. Goals carry across days. Chapter rewards are paid once, the double-bill choice appears in the ending, and free play continues afterward. Existing shop saves are retained; campaign progress saves separately.
+
+Characters blink, breathe and move their mouths when speaking. Customers enter and leave the queue with transitions, rental revenue floats above the shop, and the VHS deck spins while a tape rewinds over three seconds. Idle character motion pauses in the background and respects Reduce Motion. Open Story > Meet the 12 regulars to see the full cast.
+
+The macOS workflow tests the complete campaign, dialogue accounting, one-time payments, legacy saves and asynchronous rewinding. The character-capture workflow produces both cast sheets, the opening story scene, an in-store screenshot and a short simulator video of the animations.

@@ -50,21 +50,93 @@ struct Save: Codable {
     @Published var message = "Welcome to Night Owl. Open the doors when you're ready."
     @Published var station = "COUNTER"
     @Published var change = 0
-    let names = ["Milo", "Jules", "Bea", "Otis", "Nina", "Frank", "Zoe", "Gus"]
+    @Published var story = StoryProgress()
+    @Published var speakingGuest: UUID? = nil
+    @Published var rewinding: UUID? = nil
+    @Published var earned = 0
+    @Published var effectID = UUID()
+    var names: [String] { Cast.all.map { $0.name } }
     init() {
         if let data = UserDefaults.standard.data(forKey: "nightowl.save"), let saved = try? JSONDecoder().decode(Save.self, from: data) { s = saved } else { s = Save() }
+        if let data = UserDefaults.standard.data(forKey: "nightowl.story"), let saved = try? JSONDecoder().decode(StoryProgress.self, from: data) { story = saved }
+    }
+    var chapter: Chapter { Storybook.chapters[min(story.chapter, Storybook.chapters.count - 1)] }
+    var storyFinished: Bool { story.chapter >= Storybook.chapters.count }
+    var storyGoals: [StoryGoal] {
+        guard !storyFinished else { return [] }
+        func g(_ text: String, _ value: Int, _ target: Int) -> StoryGoal { StoryGoal(label: text, value: value, target: target) }
+        switch story.chapter {
+        case 0: return [g("Rent 2 movies", story.rentals, 2), g("Process a return", story.returns, 1)]
+        case 1: return [g("Talk to 3 different regulars", story.talked.count, 3), g("Order a tape", story.orders, 1), g("Choose the movie-night theme", story.theme == nil ? 0 : 1, 1)]
+        case 2: return [g("Rent 3 movies", story.rentals, 3), g("Sell a popcorn combo", story.snacks, 1), g("Clean 2 spills", story.cleanups, 2)]
+        case 3: return [g("Process 3 returns", story.returns, 3), g("Talk to Ravi", story.talked.contains(8) ? 1 : 0, 1)]
+        case 4: return [g("Hire Bea", s.staff ? 1 : 0, 1), g("Decorate the store", s.decor, 1), g("Rent 2 movies", story.rentals, 2)]
+        case 5: return [g("Pledge $40 for the projector", story.pledged, 40), g("Rent 4 movies", story.rentals, 4), g("Talk to Gus", story.talked.contains(7) ? 1 : 0, 1)]
+        default: return [g("Rent 5 movies", story.rentals, 5), g("Process 2 returns", story.returns, 2)]
+        }
+    }
+    var canFinishChapter: Bool { !storyFinished && storyGoals.allSatisfy { $0.complete } }
+    func chooseTheme(_ theme: String) {
+        guard story.chapter == 1, story.theme == nil, ["Creature feature", "Space double bill"].contains(theme) else { return }
+        story.theme = theme; say("Movie night theme chosen: \(theme). Frank is finding the perfect second feature.")
+    }
+    func talk() {
+        guard let guest = s.guests.first else { return }
+        let i = guest.characterIndex
+        if !story.talked.contains(i) { story.talked.append(i) }
+        speakingGuest = guest.id
+        let words = !storyFinished && chapter.lead == i ? chapter.text : guest.regular.lines[min(story.chapter / 3, 2)]
+        say("\(guest.name): “\(words)”")
+        Task { try? await Task.sleep(nanoseconds: 4_000_000_000); if self.speakingGuest == guest.id { self.speakingGuest = nil } }
+    }
+    func pledge() {
+        guard story.chapter == 5, story.pledged < 40 else { return }
+        guard s.money >= 40 else { say("Save $40 for the projector rental."); return }
+        s.money -= 40; story.pledged = 40; say("Projector reserved. Gus is bringing food; Marisol is picking up the screen.")
+    }
+    func finishChapter() {
+        guard canFinishChapter else { say("Complete this chapter's goals first. Progress carries across days."); return }
+        let reward = chapter.reward
+        let theme = story.theme
+        let pledged = story.pledged
+        let next = story.chapter + 1
+        story = StoryProgress(); story.chapter = next; story.theme = theme; story.pledged = pledged
+        s.money += reward; s.xp += 20; cashBurst(reward)
+        if storyFinished {
+            say("The \(theme ?? "neighborhood") screening is a hit. Nina's article helps secure a new lease. June's owl sign stays lit. Thank you for keeping Night Owl alive. Keep playing in free play!")
+        } else { say("Chapter complete! +$\(reward). Next: \(chapter.title). Open STORY to read the next scene.") }
+    }
+    func cashBurst(_ amount: Int) {
+        earned = amount
+        let token = UUID(); effectID = token
+        Task { try? await Task.sleep(nanoseconds: 2_000_000_000); if self.effectID == token { self.earned = 0 } }
+    }
+    func startRewind() {
+        guard let tape = s.returns.first, !tape.rewound, rewinding == nil else { return }
+        rewinding = tape.id; say("Rewinding… watch the reels. This takes a few seconds.")
+        Task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            if self.s.returns.first?.id == tape.id { self.process("rewind") }
+            self.rewinding = nil
+        }
     }
     var price: Int { 4 + ((s.guests.first?.snack ?? false) ? 3 : 0) }
     var level: Int { 1 + s.xp / 50 }
     var clock: String { String(format: "%02d:%02d", s.minutes / 60, s.minutes % 60) }
-    func save() { if let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "nightowl.save") } }
+    func save() {
+        if let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "nightowl.save") }
+        if let data = try? JSONEncoder().encode(story) { UserDefaults.standard.set(data, forKey: "nightowl.story") }
+    }
     func say(_ text: String) { message = text; save() }
     func addGuest() {
         guard s.guests.count < 5 else { return }
-        let n = (s.served + s.guests.count + s.day) % names.count
-        let g = s.movies[(s.served + s.guests.count + s.day) % s.movies.count].genre
-        s.guests.append(Guest(name: names[n], genre: g, snack: (s.served + s.guests.count) % 3 == 1))
+        let lead = chapter.lead
+        let needsLead = !storyFinished && !story.talked.contains(lead) && !s.guests.contains { $0.name == Cast.all[lead].name }
+        let n = needsLead ? lead : (s.served + s.guests.count + s.day * 3) % names.count
+        let person = Cast.all[n]
+        s.guests.append(Guest(name: person.name, genre: person.genre, snack: (s.served + s.guests.count) % 3 == 1))
     }
+
     func tick() {
         guard s.open else { return }
         s.minutes += 1
@@ -89,6 +161,7 @@ struct Save: Codable {
     func checkout() {
         guard let g = s.guests.first, let i = g.movie, g.paid else { return }
         guard change == 10 - price else { say("Check your change. The total is $\(price), paid $10."); return }
+        story.rentals += 1; if g.snack { story.snacks += 1 }; cashBurst(price)
         s.movies[i].stock -= 1; s.rentals.append(i); s.money += price; s.sales += price; s.served += 1; s.xp += 8; s.guests.removeFirst(); change = 0
         say("Be kind, rewind! Rental complete. +$\(price)")
     }
@@ -112,17 +185,18 @@ struct Save: Codable {
             guard t.scanned && t.assessed && t.rewound else { say("Scan, inspect fees, and rewind this tape first."); return }
             if s.reservations.contains(t.movie) { s.reservations.removeAll { $0 == t.movie }; s.held.append(t.movie); say("Reserved copy set aside. Collect it from the reservations desk.") }
             else { s.movies[t.movie].stock += 1; say("Tape shelved in \(s.movies[t.movie].genre).") }
-            s.returns.removeFirst(); s.xp += 5
+            s.returns.removeFirst(); s.xp += 5; story.returns += 1
         }
         save()
     }
-    func collectHold(_ i: Int) { s.held.removeAll { $0 == i }; s.rentals.append(i); s.money += 4; s.sales += 4; s.xp += 5; say("Reserved rental collected. +$4") }
-    func buy(_ i: Int) { guard s.money >= 12 else { say("You need $12 to order a tape."); return }; s.money -= 12; s.movies[i].stock += 1; say("Delivery arrived: \(s.movies[i].title). +1 copy") }
-    func clean() { guard s.dirt > 0 else { say("The store is spotless."); return }; s.dirt -= 1; s.xp += 2; say("Spill cleaned. A tidy store keeps customers happy.") }
+    func collectHold(_ i: Int) { guard s.held.contains(i) else { return }; story.rentals += 1; cashBurst(4); s.held.removeAll { $0 == i }; s.rentals.append(i); s.money += 4; s.sales += 4; s.xp += 5; say("Reserved rental collected. +$4") }
+    func buy(_ i: Int) { guard s.money >= 12 else { say("You need $12 to order a tape."); return }; s.money -= 12; s.movies[i].stock += 1; story.orders += 1; say("Delivery arrived: \(s.movies[i].title). +1 copy") }
+    func clean() { guard s.dirt > 0 else { say("The store is spotless."); return }; s.dirt -= 1; s.xp += 2; story.cleanups += 1; say("Spill cleaned. A tidy store keeps customers happy.") }
     func upgrade() { let cost = 40 + s.decor * 30; guard s.money >= cost else { say("Save $\(cost) for the next store upgrade."); return }; s.money -= cost; s.decor += 1; s.xp += 10; say("New posters and shelf space! Store style upgraded.") }
     func hire() { guard !s.staff, s.money >= 60 else { say("Hiring costs $60; wages are $15 per day."); return }; s.money -= 60; s.staff = true; say("Bea joined the team. She helps clean and rewind during opening hours.") }
     func nextDay() {
         guard s.guests.isEmpty && s.returns.isEmpty else { say("Finish the queue and return bin before closing."); return }
+        guard s.open || s.minutes >= 1200 || s.sales > 0 || !s.rentals.isEmpty else { say("Open the store and finish a shift before starting a new day."); return }
         let bills = 15 + (s.staff ? 15 : 0); s.money -= bills
         for (n, i) in s.rentals.enumerated() { s.returns.append(Tape(movie: i, late: n % 3 == 0, damaged: n % 5 == 2)) }
         s.rentals = []; s.day += 1; s.minutes = 600; s.open = false; s.sales = 0; s.dirt = min(8, s.dirt + 1)

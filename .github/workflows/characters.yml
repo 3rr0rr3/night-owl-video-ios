@@ -12,7 +12,7 @@ permissions:
 jobs:
   screenshots:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Render actual game characters in iPhone simulator
@@ -21,6 +21,9 @@ jobs:
         with:
           name: NightOwl-character-screenshots
           path: |
-            build/character-lineup.png
+            build/characters.png
+            build/newcharacters.png
+            build/story.png
+            build/store-animation.mp4
             build/characters-in-store.png
           if-no-files-found: error

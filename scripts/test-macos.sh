@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build
-swiftc -swift-version 5 NightOwl/Store.swift Tests/StoreTests.swift -o build/store-tests
+swiftc -swift-version 5 NightOwl/Store.swift NightOwl/Story.swift Tests/StoreTests.swift -o build/store-tests
 build/store-tests
 SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
 ARCH="$(uname -m)"

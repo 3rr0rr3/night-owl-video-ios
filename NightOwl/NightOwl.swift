@@ -12,13 +12,22 @@ let palette: [Color] = [mint, coral, gold, .cyan, .pink, .purple]
 }
 struct Cutout: View {
     var index: Int
+    var speaking = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: reduceMotion || scenePhase != .active)) { timeline in
+        let time = reduceMotion ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
+        let phase = (time + Double(index) * 0.71).truncatingRemainder(dividingBy: 4.7)
+        let blink = !reduceMotion && phase > 4.53
         Canvas { context, _ in
             let painter = context
             let v = index % 6
+            let extra = index >= 6
             let skin = [Color(red: 0.89, green: 0.68, blue: 0.49), Color(red: 0.64, green: 0.41, blue: 0.28), Color(red: 0.95, green: 0.74, blue: 0.63)][v % 3]
             let hair = [Color(red: 0.27, green: 0.18, blue: 0.14), Color(red: 0.32, green: 0.22, blue: 0.15), Color(red: 0.57, green: 0.25, blue: 0.13), ink, Color(red: 0.26, green: 0.16, blue: 0.12), Color(red: 0.62, green: 0.63, blue: 0.66)][v]
-            let shirt = [Color(red: 0.34, green: 0.63, blue: 0.54), Color(red: 0.58, green: 0.33, blue: 0.27), Color(red: 0.77, green: 0.57, blue: 0.22), Color(red: 0.27, green: 0.47, blue: 0.62), Color(red: 0.61, green: 0.29, blue: 0.39), Color(red: 0.40, green: 0.35, blue: 0.49)][v]
+            let originalShirt = [Color(red: 0.34, green: 0.63, blue: 0.54), Color(red: 0.58, green: 0.33, blue: 0.27), Color(red: 0.77, green: 0.57, blue: 0.22), Color(red: 0.27, green: 0.47, blue: 0.62), Color(red: 0.61, green: 0.29, blue: 0.39), Color(red: 0.40, green: 0.35, blue: 0.49)][v]
+            let shirt = extra ? [Color(red: 0.20, green: 0.57, blue: 0.58), Color(red: 0.70, green: 0.40, blue: 0.22), Color(red: 0.39, green: 0.44, blue: 0.29), Color(red: 0.51, green: 0.31, blue: 0.64), Color(red: 0.25, green: 0.43, blue: 0.61), Color(red: 0.52, green: 0.43, blue: 0.34)][v] : originalShirt
             func oval(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> Path { Path(ellipseIn: CGRect(x: x, y: y, width: w, height: h)) }
             func polygon(_ points: [CGPoint]) -> Path { Path { p in p.move(to: points[0]); for pt in points.dropFirst() { p.addLine(to: pt) }; p.closeSubpath() } }
             func draw(_ path: Path, _ color: Color, width: CGFloat = 1.4) {
@@ -29,6 +38,8 @@ struct Cutout: View {
                 painter.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round))
             }
             painter.fill(oval(9, 123, 62, 6), with: .color(.black.opacity(0.25)))
+            if extra && v == 0 { draw(oval(55, 17, 16, 40), hair) }
+            if extra && v == 5 { draw(oval(51, 3, 15, 17), hair) }
             // Long trouser legs, adult shoulder width, and a visible neck replace the toddler silhouette.
             draw(polygon([CGPoint(x: 20,y: 90),CGPoint(x: 60,y: 90),CGPoint(x: 57,y: 121),CGPoint(x: 44,y: 121),CGPoint(x: 40,y: 102),CGPoint(x: 36,y: 121),CGPoint(x: 22,y: 121)]), Color(red: 0.19, green: 0.24, blue: 0.31))
             draw(Path(roundedRect: CGRect(x: 17, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
@@ -38,7 +49,7 @@ struct Cutout: View {
             let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
             draw(torso, shirt, width: 1.8)
             draw(Path(roundedRect: CGRect(x: 10, y: 92, width: 8, height: 13), cornerRadius: 3), skin)
-            draw(Path(roundedRect: CGRect(x: 63, y: 92, width: 8, height: 13), cornerRadius: 3), skin)
+            draw(Path(roundedRect: CGRect(x: 63, y: 92 + (speaking ? CGFloat(sin(time * 6)) * 1.5 : 0), width: 8, height: 13), cornerRadius: 3), skin)
             line([CGPoint(x: 15,y: 73),CGPoint(x: 14,y: 91)], ink.opacity(0.5))
             line([CGPoint(x: 66,y: 73),CGPoint(x: 67,y: 91)], ink.opacity(0.5))
             if v == 1 || v == 4 {
@@ -58,6 +69,29 @@ struct Cutout: View {
             }
             line([CGPoint(x: 21,y: 98),CGPoint(x: 59,y: 98)], ink, width: 2.5)
             draw(Path(roundedRect: CGRect(x: 37, y: 96, width: 6, height: 4), cornerRadius: 0.5), gold, width: 0.6)
+            if extra && v == 0 {
+                line([CGPoint(x: 31,y: 54),CGPoint(x: 40,y: 63),CGPoint(x: 49,y: 54)], skin, width: 2)
+                draw(Path(roundedRect: CGRect(x: 49,y: 72,width: 8,height: 12),cornerRadius: 1), .white, width: 0.5)
+                line([CGPoint(x: 53,y: 74),CGPoint(x: 53,y: 79)], coral, width: 1.1)
+                line([CGPoint(x: 51,y: 76),CGPoint(x: 55,y: 76)], coral, width: 1.1)
+            }
+            if extra && v == 1 {
+                draw(polygon([CGPoint(x: 28,y: 61),CGPoint(x: 52,y: 61),CGPoint(x: 57,y: 97),CGPoint(x: 23,y: 97)]), Color(red: 0.90,green: 0.85,blue: 0.73), width: 0.8)
+                line([CGPoint(x: 30,y: 64),CGPoint(x: 40,y: 71),CGPoint(x: 50,y: 64)], shirt, width: 2)
+                draw(Path(roundedRect: CGRect(x: 30,y: 80,width: 20,height: 9),cornerRadius: 1), Color(red: 0.83,green: 0.75,blue: 0.59), width: 0.7)
+            }
+            if extra && v == 2 {
+                line([CGPoint(x: 22,y: 92),CGPoint(x: 59,y: 92)], Color(red: 0.41,green: 0.24,blue: 0.14), width: 5)
+                draw(Path(roundedRect: CGRect(x: 46,y: 90,width: 10,height: 12),cornerRadius: 1), Color(red: 0.45,green: 0.28,blue: 0.17), width: 0.7)
+                line([CGPoint(x: 51,y: 84),CGPoint(x: 51,y: 94)], .gray, width: 2)
+                line([CGPoint(x: 48,y: 83),CGPoint(x: 51,y: 87),CGPoint(x: 54,y: 83)], .gray, width: 1.6)
+            }
+            if extra && v == 4 {
+                draw(Path(roundedRect: CGRect(x: 27,y: 69,width: 26,height: 28),cornerRadius: 2), Color(red: 0.23,green: 0.33,blue: 0.45), width: 0.8)
+                line([CGPoint(x: 29,y: 57),CGPoint(x: 32,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
+                line([CGPoint(x: 51,y: 57),CGPoint(x: 48,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
+                draw(oval(30,70,3,3), gold, width: 0.3); draw(oval(47,70,3,3), gold, width: 0.3)
+            }
             // A longer face, tapered jaw, smaller eyes, nose bridge and age lines read as adults.
             draw(oval(18, 25, 7, 12), skin)
             draw(oval(55, 25, 7, 12), skin)
@@ -75,16 +109,23 @@ struct Cutout: View {
                 [CGPoint(x: 22,y: 44),CGPoint(x: 20,y: 17),CGPoint(x: 29,y: 7),CGPoint(x: 45,y: 6),CGPoint(x: 58,y: 16),CGPoint(x: 59,y: 45),CGPoint(x: 54,y: 43),CGPoint(x: 52,y: 18),CGPoint(x: 40,y: 14),CGPoint(x: 28,y: 23),CGPoint(x: 27,y: 44)],
                 [CGPoint(x: 23,y: 30),CGPoint(x: 21,y: 17),CGPoint(x: 27,y: 11),CGPoint(x: 33,y: 10),CGPoint(x: 36,y: 14),CGPoint(x: 44,y: 14),CGPoint(x: 48,y: 10),CGPoint(x: 55,y: 14),CGPoint(x: 58,y: 30),CGPoint(x: 54,y: 28),CGPoint(x: 50,y: 18),CGPoint(x: 46,y: 20),CGPoint(x: 34,y: 20),CGPoint(x: 29,y: 17),CGPoint(x: 27,y: 30)]
             ]
-            draw(polygon(hairlines[v]), hair, width: 1.2)
-            if v == 2 { for x in [25, 32, 39, 46, 53] { draw(oval(CGFloat(x) - 3, 8, 9, 9), hair, width: 0.6) } }
+            if !(extra && v == 2) { draw(polygon(hairlines[v]), hair, width: 1.2) }
+            if extra && v == 1 { painter.fill(oval(29, 9, 22, 9), with: .color(skin)) }
+            if extra && v == 3 { draw(oval(20, 4, 39, 18), hair, width: 1.1) }
+            if v == 2 && !extra { for x in [25, 32, 39, 46, 53] { draw(oval(CGFloat(x) - 3, 8, 9, 9), hair, width: 0.6) } }
             if v == 0 || v == 3 {
                 let beard = polygon([CGPoint(x: 26,y: 34),CGPoint(x: 30,y: 39),CGPoint(x: 35,y: 40),CGPoint(x: 40,y: 38),CGPoint(x: 46,y: 40),CGPoint(x: 51,y: 38),CGPoint(x: 55,y: 34),CGPoint(x: 52,y: 46),CGPoint(x: 45,y: 50),CGPoint(x: 36,y: 50),CGPoint(x: 28,y: 45)])
                 painter.fill(beard, with: .color(hair.opacity(v == 0 ? 0.65 : 0.9)))
             }
+            if blink {
+                line([CGPoint(x: 29,y: 30),CGPoint(x: 37,y: 30)], width: 1.1)
+                line([CGPoint(x: 44,y: 30),CGPoint(x: 52,y: 30)], width: 1.1)
+            } else {
             draw(oval(28, 26, 10, 7), .white, width: 0.65)
             draw(oval(43, 26, 10, 7), .white, width: 0.65)
             painter.fill(oval(32, 27, 3.5, 5), with: .color(ink))
             painter.fill(oval(46, 27, 3.5, 5), with: .color(ink))
+            }
             line([CGPoint(x: 28,y: 23),CGPoint(x: 36,y: 22)], hair, width: 1.6)
             line([CGPoint(x: 44,y: 22),CGPoint(x: 52,y: 23)], hair, width: 1.6)
             line([CGPoint(x: 40,y: 27),CGPoint(x: 38,y: 36),CGPoint(x: 43,y: 37)], ink.opacity(0.65), width: 0.85)
@@ -100,17 +141,28 @@ struct Cutout: View {
                 line([CGPoint(x: 30,y: 19),CGPoint(x: 34,y: 18)], ink.opacity(0.35), width: 0.6)
                 line([CGPoint(x: 46,y: 18),CGPoint(x: 50,y: 19)], ink.opacity(0.35), width: 0.6)
             }
+            if extra && v == 3 {
+                let band = Path { p in p.move(to: CGPoint(x: 20,y: 31)); p.addQuadCurve(to: CGPoint(x: 60,y: 31),control: CGPoint(x: 40,y: -4)) }
+                painter.stroke(band,with: .color(.gray),lineWidth: 2.2)
+                draw(Path(roundedRect: CGRect(x: 17,y: 25,width: 7,height: 15),cornerRadius: 2), ink,width: 0.6)
+                draw(Path(roundedRect: CGRect(x: 56,y: 25,width: 7,height: 15),cornerRadius: 2), ink,width: 0.6)
+            }
             let smile = Path { p in p.move(to: CGPoint(x: 34,y: 43)); p.addQuadCurve(to: CGPoint(x: 47,y: 42), control: CGPoint(x: 41,y: 47)) }
             painter.stroke(smile, with: .color(v == 2 || v == 4 ? Color(red: 0.53, green: 0.19, blue: 0.22) : ink), style: StrokeStyle(lineWidth: 1.1, lineCap: .round))
+            if speaking && !reduceMotion { draw(oval(35, 41, 11, 2 + CGFloat(abs(sin(time * 9))) * 4), ink, width: 0.5) }
             line([CGPoint(x: 29,y: 36),CGPoint(x: 27,y: 39)], ink.opacity(0.3), width: 0.6)
             line([CGPoint(x: 52,y: 36),CGPoint(x: 54,y: 39)], ink.opacity(0.3), width: 0.6)
             line([CGPoint(x: 36,y: 48),CGPoint(x: 44,y: 48)], ink.opacity(0.25), width: 0.6)
         }.frame(width: 80, height: 130)
+        .scaleEffect(x: 1 + (reduceMotion ? 0 : sin(time * 1.8 + Double(index)) * 0.004), y: 1 + (reduceMotion ? 0 : sin(time * 1.8 + Double(index)) * 0.008), anchor: .bottom)
+        .rotationEffect(.degrees(reduceMotion ? 0 : sin(time * 1.4 + Double(index)) * 0.45), anchor: .bottom)
+        }
         .accessibilityLabel("Adult cartoon customer")
     }
 }
 struct ShopArt: View {
     @EnvironmentObject var game: Store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         GeometryReader { geo in
             ZStack {
@@ -122,11 +174,14 @@ struct ShopArt: View {
                         VStack { Image(systemName: "moon.stars.fill").font(.largeTitle).foregroundStyle(gold); Text(game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT").font(.system(size: 9, weight: .heavy)); Text("2 NIGHTS\n$4").font(.system(size: 19, weight: .black, design: .rounded)).foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
                     }.padding(.horizontal, 16)
                     Rectangle().fill(Color(red: 0.29, green: 0.26, blue: 0.38)).frame(height: 95).overlay(alignment: .bottom) {
-                        HStack(spacing: 1) { ForEach(0..<min(game.s.guests.count, 4), id: \.self) { n in Cutout(index: n + game.s.day) }; Spacer() }.padding(.leading, 15).offset(y: 2)
+                        HStack(spacing: 1) { ForEach(Array(game.s.guests.prefix(4))) { guest in
+                            Cutout(index: guest.characterIndex, speaking: game.speakingGuest == guest.id)
+                                .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .move(edge: .leading).combined(with: .opacity)))
+                        }; Spacer() }.padding(.leading, 15).offset(y: 2).animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.8), value: game.s.guests.map { $0.id })
                     }
                 }
                 VStack { Spacer(); HStack { Text("▰ RETURNS \(game.s.returns.count)"); Spacer(); Text("◉ REGISTER") }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(coral).frame(height: 4) } }
-                if game.s.decor > 0 { Image(systemName: "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
+                if game.s.decor > 0 { Image(systemName: game.storyFinished ? "star.circle.fill" : "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
             }
         }.frame(height: 275).clipShape(RoundedRectangle(cornerRadius: 18))
     }
@@ -141,7 +196,8 @@ struct ShopArt: View {
 }
 struct GameView: View {
     @EnvironmentObject var game: Store
-    let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORE PC"]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC"]
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     var body: some View {
         ScrollView {
@@ -152,23 +208,29 @@ struct GameView: View {
                     VStack(alignment: .trailing) { Text("$\(game.s.money)").font(.title2.bold()).foregroundStyle(gold); Text("LEVEL \(game.level)").font(.caption2.bold()).foregroundStyle(.secondary) }
                 }
                 HStack { Label("DAY \(game.s.day)", systemImage: "calendar"); Spacer(); Text(game.clock); Spacer(); Text(game.s.open ? "OPEN" : "CLOSED").foregroundStyle(game.s.open ? mint : coral) }.font(.system(size: 11, weight: .bold, design: .monospaced))
-                ShopArt()
+                ShopArt().overlay(alignment: .topTrailing) {
+                    if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
+                }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
                 HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
+                Button { withAnimation { game.station = "STORY" } } label: {
+                    HStack { Image(systemName: game.storyFinished ? "star.fill" : "book.closed.fill"); Text(game.storyFinished ? "MAPLE STREET MOVIE NIGHT · SAVED" : "STORY \(game.story.chapter + 1)/7 · \(game.chapter.title)").font(.system(size: 11, weight: .bold)); Spacer(); Image(systemName: "chevron.right") }.foregroundStyle(gold)
+                }.buttonStyle(.plain)
                 ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { ForEach(tabs, id: \.self) { tab in Button { game.station = tab } label: { Text(tab).font(.system(size: 11, weight: .heavy)).padding(.horizontal, 14).padding(.vertical, 12).background(game.station == tab ? mint : .white.opacity(0.06)).foregroundStyle(game.station == tab ? ink : .white).clipShape(Capsule()) } } } }
-                Group { switch game.station { case "COUNTER": counter; case "RETURNS": returns; case "SHELVES": shelves; default: pc } }
+                Group { switch game.station { case "COUNTER": counter; case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
-        }.frame(maxWidth: .infinity).background(ink).onReceive(timer) { _ in game.tick() }
+        }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id }).onReceive(timer) { _ in game.tick() }
     }
     func action(_ title: String, _ symbol: String, color: Color = mint, enabled: Bool = true, run: @escaping () -> Void) -> some View {
-        Button(action: run) { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)
+        Button { withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { run() } } label: { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)
     }
     var counter: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("THE RENTAL COUNTER", "\(game.s.guests.count) in line")
             if let g = game.s.guests.first {
-                HStack { Cutout(index: game.s.day); VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text("“Got any \(g.genre.lowercased()) movies?”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
+                HStack { Cutout(index: g.characterIndex, speaking: game.speakingGuest == g.id).id(g.id).transition(.opacity); VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“Got any \(g.genre.lowercased()) movies?”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
+                action("Talk to \(g.name)", "bubble.left.and.bubble.right", color: gold) { game.talk() }
                 if let i = g.movie { Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
                 if g.movie == nil {
                     action("Choose a movie", "rectangle.stack") { game.station = "SHELVES" }
@@ -189,9 +251,10 @@ struct GameView: View {
             if let t = game.s.returns.first {
                 Text(game.s.movies[t.movie].title).font(.title3.bold()).foregroundStyle(gold)
                 Text("\(t.late ? "LATE · $2" : "ON TIME")   /   \(t.damaged ? "DAMAGED · $5" : "GOOD CONDITION")").font(.caption.bold()).foregroundStyle(coral)
+                RewindDeck(active: game.rewinding != nil)
                 action(t.scanned ? "Checked in ✓" : "1. Scan return", "barcode", enabled: !t.scanned) { game.process("scan") }
                 action(t.assessed ? "Fees reviewed ✓" : "2. Inspect & collect fees", "magnifyingglass", enabled: t.scanned && !t.assessed) { game.process("fee") }
-                action(t.rewound ? "Rewound ✓" : "3. Rewind tape", "backward.end", enabled: !t.rewound) { game.process("rewind") }
+                action(t.rewound ? "Rewound ✓" : (game.rewinding != nil ? "Rewinding…" : "3. Rewind tape"), "backward.end", enabled: !t.rewound && game.rewinding == nil) { game.startRewind() }
                 action("4. Shelve / set aside reservation", "books.vertical", enabled: t.scanned && t.assessed && t.rewound) { game.process("shelve") }
             } else { Text("All tapes checked in. Tomorrow brings more returns.").font(.subheadline).foregroundStyle(.secondary) }
             ForEach(game.s.held, id: \.self) { i in action("Collect: \(game.s.movies[i].title)", "bookmark.fill", color: gold) { game.collectHold(i) } }
@@ -229,4 +292,68 @@ struct GameView: View {
         }
     }
     func title(_ text: String, _ detail: String) -> some View { HStack { Text(text).font(.system(size: 13, weight: .black, design: .monospaced)); Spacer(); Text(detail).font(.caption2).foregroundStyle(.secondary) } }
+}
+
+struct RewindDeck: View {
+    var active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: !active || reduceMotion)) { timeline in
+            let angle = active && !reduceMotion ? timeline.date.timeIntervalSinceReferenceDate * -540 : 0
+            HStack(spacing: 20) {
+                Image(systemName: "circle.dotted").font(.system(size: 36, weight: .bold)).rotationEffect(.degrees(angle))
+                VStack(spacing: 5) { Text(active ? "◀◀ REWINDING" : "BE KIND. REWIND.").font(.system(size: 11,weight: .black,design: .monospaced)); if active { ProgressView().tint(mint) } else { Text("NIGHT OWL VHS DECK").font(.system(size: 8,design: .monospaced)).foregroundStyle(.secondary) } }
+                Image(systemName: "circle.dotted").font(.system(size: 36, weight: .bold)).rotationEffect(.degrees(angle))
+            }.foregroundStyle(mint).frame(maxWidth: .infinity).frame(height: 82).background(.black.opacity(0.35),in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+}
+struct StoryPanel: View {
+    @EnvironmentObject var game: Store
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if game.storyFinished {
+                Label("THE OWL STAYS LIT",systemImage: "star.circle.fill").font(.title3.bold()).foregroundStyle(gold)
+                Text("Your community movie night brings Maple Street together. Frank screens the recovered home movie, Nina's article helps secure a new lease, and June's shop has a future.").font(.subheadline)
+                Text("Tonight's double bill: \(game.story.theme ?? "Neighborhood favorites"). Continue running Night Owl in free play.").font(.caption).foregroundStyle(mint)
+            } else {
+                Text("CHAPTER \(game.story.chapter + 1) OF 7").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
+                HStack(alignment: .top, spacing: 12) {
+                    Cutout(index: game.chapter.lead).scaleEffect(0.8).frame(width: 66,height: 110)
+                    VStack(alignment: .leading, spacing: 7) { Text(game.chapter.title).font(.title3.bold()); Text(game.chapter.speaker).font(.caption.bold()).foregroundStyle(mint) }
+                }
+                Text(game.chapter.text).font(.subheadline).lineSpacing(4)
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(game.storyGoals) { goal in
+                        HStack { Image(systemName: goal.complete ? "checkmark.circle.fill" : "circle").foregroundStyle(goal.complete ? mint : .secondary); Text(goal.label).font(.caption); Spacer(); Text("\(min(goal.value, goal.target))/\(goal.target)").font(.system(size: 11,weight: .bold,design: .monospaced)).foregroundStyle(goal.complete ? mint : .secondary) }
+                    }
+                }.padding(14).background(.white.opacity(0.05),in: RoundedRectangle(cornerRadius: 12))
+                if game.story.chapter == 1 && game.story.theme == nil {
+                    Text("Choose your double bill. This becomes your festival theme.").font(.caption).foregroundStyle(.secondary)
+                    HStack { storyButton("Creature feature", "eye") { game.chooseTheme("Creature feature") }; storyButton("Space double bill", "moon.stars") { game.chooseTheme("Space double bill") } }
+                }
+                if game.story.chapter == 5 && game.story.pledged < 40 { storyButton("Pledge $40 for the projector", "film") { game.pledge() } }
+                Button { withAnimation { game.finishChapter() } } label: {
+                    Label(game.story.chapter == 6 ? "Start movie night · +$100" : "Complete chapter · +$\(game.chapter.reward)", systemImage: "checkmark.seal.fill").font(.subheadline.bold()).padding(14).frame(maxWidth: .infinity).background(game.canFinishChapter ? mint.opacity(0.18) : .white.opacity(0.04),in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(game.canFinishChapter ? mint : .gray)
+                }.disabled(!game.canFinishChapter)
+                Text("Goals carry across days. Talk to customers at the counter; the chapter's featured regular will visit while you work.").font(.caption).foregroundStyle(.secondary)
+            }
+            DisclosureGroup {
+                LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())],alignment: .leading,spacing: 14) {
+                    ForEach(Cast.all) { person in
+                        VStack(alignment: .leading,spacing: 6) {
+                            Cutout(index: person.id).frame(maxWidth: .infinity)
+                            Text(person.name).font(.headline).foregroundStyle(palette[person.id % 6])
+                            Text(person.role).font(.system(size: 10,weight: .bold)).foregroundStyle(mint)
+                            Text(person.bio).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false,vertical: true)
+                        }.padding(10).frame(maxWidth: .infinity,alignment: .leading).background(.white.opacity(0.04),in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }.padding(.top,12)
+            } label: { Text("MEET THE 12 REGULARS").font(.system(size: 12,weight: .bold,design: .monospaced)).foregroundStyle(gold) }
+            Text("NIGHT OWL · MAPLE STREET, 1994").font(.system(size: 9,weight: .bold,design: .monospaced)).foregroundStyle(.secondary)
+        }
+    }
+    func storyButton(_ title: String,_ icon: String,run: @escaping () -> Void) -> some View {
+        Button { withAnimation { run() } } label: { Label(title,systemImage: icon).font(.caption.bold()).padding(12).frame(maxWidth: .infinity).foregroundStyle(gold).background(gold.opacity(0.12),in: RoundedRectangle(cornerRadius: 10)) }
+    }
 }

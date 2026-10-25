@@ -1,0 +1,25 @@
+name: Character screenshots
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/character-capture.py
+      - scripts/capture-characters.sh
+      - .github/workflows/characters.yml
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render actual game characters in iPhone simulator
+        run: bash scripts/capture-characters.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: |
+            build/character-lineup.png
+            build/characters-in-store.png
+          if-no-files-found: error

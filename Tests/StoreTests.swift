@@ -134,6 +134,16 @@ import Foundation
         assert(wall.x <= 5.15, "Player stays within store walls")
         let stopped = WorldLayout.move(from: spawn,side: 1,forward: 1,yaw: 0,seconds: 0)
         assert(stopped == spawn)
+        for target in [FloorPoint(x: 3,z: -3.8),FloorPoint(x: -4,z: 4.6),FloorPoint(x: 4.3,z: -5.3),FloorPoint(x: -4.5,z: -4.9)] {
+            let route = WorldLayout.path(from: spawn,to: target)
+            assert(!route.isEmpty && route.count < 530)
+            assert(route.allSatisfy { point in !WorldLayout.blocks.contains { $0.contains(point) } }, "Tap routes avoid furniture")
+            for pair in zip(route,route.dropFirst()) { assert(abs(pair.0.x - pair.1.x) + abs(pair.0.z - pair.1.z) <= 0.501, "Route uses adjacent floor tiles") }
+            assert(hypot(route.last!.x - target.x,route.last!.z - target.z) < 2.4, "Route reaches task interaction range")
+        }
+        let blockedRoute = WorldLayout.path(from: spawn,to: FloorPoint(x: -2.5,z: -1),extra: [FloorBlock(x: 1,z: 3,width: 1,depth: 1)])
+        assert(!blockedRoute.isEmpty && blockedRoute.allSatisfy { !WorldLayout.blocks[0].contains($0) })
+        print("PASS: tap-to-move tile routes, blocked destinations and station approach paths")
         migrated.newGame()
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)
         let newSave = Store(); assert(newSave.hasSavedGame && newSave.s.money == 150 && newSave.s.day == 1)

@@ -21,7 +21,7 @@ struct Cutout: View {
         let phase = (time + Double(index) * 0.71).truncatingRemainder(dividingBy: 4.7)
         let blink = !reduceMotion && phase > 4.53
         Canvas { context, _ in
-            let painter = context
+            var painter = context
             let v = index % 6
             let extra = index >= 6
             let skin = [Color(red: 0.89, green: 0.68, blue: 0.49), Color(red: 0.64, green: 0.41, blue: 0.28), Color(red: 0.95, green: 0.74, blue: 0.63)][v % 3]
@@ -92,7 +92,9 @@ struct Cutout: View {
                 line([CGPoint(x: 51,y: 57),CGPoint(x: 48,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
                 draw(oval(30,70,3,3), gold, width: 0.3); draw(oval(47,70,3,3), gold, width: 0.3)
             }
-            // A longer face, tapered jaw, smaller eyes, nose bridge and age lines read as adults.
+            painter.translateBy(x: -12,y: 0)
+            painter.scaleBy(x: 1.3,y: 1.3)
+            // Adult facial details remain on the larger chibi portrait head.
             draw(oval(18, 25, 7, 12), skin)
             draw(oval(55, 25, 7, 12), skin)
             let face = Path { p in

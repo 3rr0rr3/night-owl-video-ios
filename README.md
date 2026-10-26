@@ -26,3 +26,10 @@ The app now starts at a title screen with Start Game, Continue, New Game and How
 The main game is a native SceneKit 3D store, with solid shelves and counters, VHS stock, a return desk, CRT computer, snack machine, noticeboard and animated 3D adult customers. Drag the view to look around, drag the movement stick to walk, and approach a labeled station to tap it or press USE. Task screens retain the full rental, return, management and story systems. Journal opens the story from anywhere. Reset view returns the camera to the entrance.
 
 Movement tests cover normalized diagonal speed, furniture collisions, wall bounds and spawn safety. CI launches both the title screen and the 3D world on an iPhone simulator, and captures title/store previews. The scene targets 30 fps and uses procedural low-poly geometry and built-in Apple frameworks. Physical iPhone performance still requires on-device testing.
+
+## Overhead chibi edition (2.1)
+The camera is now a fixed-angle orthographic sky view that tracks a visible shopkeeper. The room has cutaway walls, lower shelves, warmer floor tiles and a brighter miniature-shop palette. All 3D characters use rounded oversized heads and compact bodies, retaining adult clothing, facial hair and glasses where appropriate.
+
+Tap a floor tile to navigate around furniture. Tap a station to walk into range and open its tasks automatically. A small movement stick remains for precise positioning. The first-person camera drag and crosshair are removed. Start Game/Continue/New Game and all shop/story saves remain available.
+
+Tests cover reachable station routes, blocked destinations, adjacent route tiles and furniture clearance. Simulator smoke checks require an orthographic camera and a visible player node.

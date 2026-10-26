@@ -19,3 +19,10 @@ There are now twelve adult regulars with stable portraits, jobs, film preference
 Characters blink, breathe and move their mouths when speaking. Customers enter and leave the queue with transitions, rental revenue floats above the shop, and the VHS deck spins while a tape rewinds over three seconds. Idle character motion pauses in the background and respects Reduce Motion. Open Story > Meet the 12 regulars to see the full cast.
 
 The macOS workflow tests the complete campaign, dialogue accounting, one-time payments, legacy saves and asynchronous rewinding. The character-capture workflow produces both cast sheets, the opening story scene, an in-store screenshot and a short simulator video of the animations.
+
+## 3D store & title screen (2.0)
+The app now starts at a title screen with Start Game, Continue, New Game and How to Play. New Game asks before replacing a save. Continue loads the existing shop and campaign. Returning to the title screen saves and pauses the shift.
+
+The main game is a native SceneKit 3D store, with solid shelves and counters, VHS stock, a return desk, CRT computer, snack machine, noticeboard and animated 3D adult customers. Drag the view to look around, drag the movement stick to walk, and approach a labeled station to tap it or press USE. Task screens retain the full rental, return, management and story systems. Journal opens the story from anywhere. Reset view returns the camera to the entrance.
+
+Movement tests cover normalized diagonal speed, furniture collisions, wall bounds and spawn safety. CI launches both the title screen and the 3D world on an iPhone simulator, and captures title/store previews. The scene targets 30 fps and uses procedural low-poly geometry and built-in Apple frameworks. Physical iPhone performance still requires on-device testing.

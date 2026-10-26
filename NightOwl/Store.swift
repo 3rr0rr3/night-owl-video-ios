@@ -120,6 +120,12 @@ struct Save: Codable {
             self.rewinding = nil
         }
     }
+    var hasSavedGame: Bool { UserDefaults.standard.data(forKey: "nightowl.save") != nil }
+    func newGame() {
+        s = Save(); story = StoryProgress(); speakingGuest = nil; rewinding = nil; earned = 0; effectID = UUID(); change = 0; station = "COUNTER"
+        message = "Aunt June left you the keys. Explore Night Owl and open the store when you're ready."
+        save()
+    }
     var price: Int { 4 + ((s.guests.first?.snack ?? false) ? 3 : 0) }
     var level: Int { 1 + s.xp / 50 }
     var clock: String { String(format: "%02d:%02d", s.minutes / 60, s.minutes % 60) }

@@ -23,7 +23,11 @@ source += r'''
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--characters") || ProcessInfo.processInfo.arguments.contains("--newcharacters") {
+            if ProcessInfo.processInfo.arguments.contains("--menu") {
+                StartGameView().environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--world") || ProcessInfo.processInfo.arguments.contains("--motion") {
+                WorldGameScreen(onMenu: {}).environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--characters") || ProcessInfo.processInfo.arguments.contains("--newcharacters") {
                 let start = ProcessInfo.processInfo.arguments.contains("--newcharacters") ? 6 : 0
                 VStack(spacing: 20) {
                     Text("NIGHT OWL").font(.system(size: 30,weight: .black,design: .rounded)).foregroundStyle(mint)

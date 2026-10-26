@@ -8,7 +8,7 @@ let palette: [Color] = [mint, coral, gold, .cyan, .pink, .purple]
 
 @main struct NightOwlApp: App {
     @StateObject var store = Store()
-    var body: some Scene { WindowGroup { GameView().environmentObject(store).preferredColorScheme(.dark) } }
+    var body: some Scene { WindowGroup { StartGameView().environmentObject(store).preferredColorScheme(.dark) } }
 }
 struct Cutout: View {
     var index: Int
@@ -220,7 +220,7 @@ struct GameView: View {
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
-        }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id }).onReceive(timer) { _ in game.tick() }
+        }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
     }
     func action(_ title: String, _ symbol: String, color: Color = mint, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button { withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { run() } } label: { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)

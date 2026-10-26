@@ -21,7 +21,8 @@ jobs:
         with:
           name: NightOwl-character-screenshots
           path: |
-            build/characters.png
+            build/menu.png
+            build/world.png
             build/newcharacters.png
             build/story.png
             build/store-animation.mp4

@@ -20,16 +20,7 @@ Characters blink, breathe and move their mouths when speaking. Customers enter a
 
 The macOS workflow tests the complete campaign, dialogue accounting, one-time payments, legacy saves and asynchronous rewinding. The character-capture workflow produces both cast sheets, the opening story scene, an in-store screenshot and a short simulator video of the animations.
 
-## 3D store & title screen (2.0)
-The app now starts at a title screen with Start Game, Continue, New Game and How to Play. New Game asks before replacing a save. Continue loads the existing shop and campaign. Returning to the title screen saves and pauses the shift.
+## Illustrated store restored (2.2)
+The game uses the original 2D illustrated shop, adult paper-cutout customers and direct station tabs. The 3D renderer, movement controls and SceneKit dependency have been removed. Adult portrait proportions match the original art. Story chapters, character animations, rental tasks and existing saves remain.
 
-The main game is a native SceneKit 3D store, with solid shelves and counters, VHS stock, a return desk, CRT computer, snack machine, noticeboard and animated 3D adult customers. Drag the view to look around, drag the movement stick to walk, and approach a labeled station to tap it or press USE. Task screens retain the full rental, return, management and story systems. Journal opens the story from anywhere. Reset view returns the camera to the entrance.
-
-Movement tests cover normalized diagonal speed, furniture collisions, wall bounds and spawn safety. CI launches both the title screen and the 3D world on an iPhone simulator, and captures title/store previews. The scene targets 30 fps and uses procedural low-poly geometry and built-in Apple frameworks. Physical iPhone performance still requires on-device testing.
-
-## Overhead chibi edition (2.1)
-The camera is now a fixed-angle orthographic sky view that tracks a visible shopkeeper. The room has cutaway walls, lower shelves, warmer floor tiles and a brighter miniature-shop palette. All 3D characters use rounded oversized heads and compact bodies, retaining adult clothing, facial hair and glasses where appropriate.
-
-Tap a floor tile to navigate around furniture. Tap a station to walk into range and open its tasks automatically. A small movement stick remains for precise positioning. The first-person camera drag and crosshair are removed. Start Game/Continue/New Game and all shop/story saves remain available.
-
-Tests cover reachable station routes, blocked destinations, adjacent route tiles and furniture clearance. Simulator smoke checks require an orthographic camera and a visible player node.
+The title screen keeps Start Game, Continue, New Game and How to Play. Menu saves and pauses the shift. Gameplay advances only while the store screen is active; app backgrounding saves progress. CI tests shop rules and story progression, builds the arm64 IPA, and captures the title and illustrated store in the iPhone simulator.

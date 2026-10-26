@@ -24,5 +24,5 @@ jobs:
           name: iPhone-launch-screenshot
           path: |
             build/iPhone-launch.png
-            build/iPhone-3D.png
+            build/iPhone-store.png
           if-no-files-found: error

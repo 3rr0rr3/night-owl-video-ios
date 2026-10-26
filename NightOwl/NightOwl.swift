@@ -92,8 +92,6 @@ struct Cutout: View {
                 line([CGPoint(x: 51,y: 57),CGPoint(x: 48,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
                 draw(oval(30,70,3,3), gold, width: 0.3); draw(oval(47,70,3,3), gold, width: 0.3)
             }
-            painter.translateBy(x: -12,y: 0)
-            painter.scaleBy(x: 1.3,y: 1.3)
             // Adult facial details remain on the larger chibi portrait head.
             draw(oval(18, 25, 7, 12), skin)
             draw(oval(55, 25, 7, 12), skin)
@@ -200,7 +198,6 @@ struct GameView: View {
     @EnvironmentObject var game: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC"]
-    let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {

@@ -26,7 +26,7 @@ source += r'''
             if ProcessInfo.processInfo.arguments.contains("--menu") {
                 StartGameView().environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--world") || ProcessInfo.processInfo.arguments.contains("--motion") {
-                WorldGameScreen(onMenu: {}).environmentObject(store).preferredColorScheme(.dark)
+                FlatGameScreen(onMenu: {}).environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--characters") || ProcessInfo.processInfo.arguments.contains("--newcharacters") {
                 let start = ProcessInfo.processInfo.arguments.contains("--newcharacters") ? 6 : 0
                 VStack(spacing: 20) {

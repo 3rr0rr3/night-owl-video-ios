@@ -1,0 +1,40 @@
+name: Verify 3D release previews
+on:
+  push:
+    paths: [.github/workflows/verify-3d-preview.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40362748887
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40362748773
+          github-token: ${{ github.token }}
+      - name: Verify IPA and export compact image previews
+        run: |
+          sips -Z 640 previews/menu.png --out previews/menu-small.png >/dev/null
+          sips -Z 640 previews/world.png --out previews/world-small.png >/dev/null
+          python3 - <<'PY'
+          import zipfile, pathlib, plistlib, struct, base64
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          binary=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',binary)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='2.0'
+          assert info['CFBundleIdentifier']=='com.nightowl.videostore'
+          print('PASS: v2.0 IPA CRC, arm64 executable and bundle metadata')
+          for name in ['menu','world']:
+              print(name.upper()+'_PNG:'+base64.b64encode(pathlib.Path('previews/'+name+'-small.png').read_bytes()).decode())
+          PY

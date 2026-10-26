@@ -43,7 +43,7 @@ struct ShopStation: Equatable {
         buildStore()
         camera.camera = SCNCamera()
         camera.camera?.usesOrthographicProjection = true
-        camera.camera?.orthographicScale = preview ? 11.7 : 9.8
+        camera.camera?.orthographicScale = preview ? 12.3 : 11.4
         camera.camera?.zNear = 0.05
         camera.camera?.zFar = 60
         scene.rootNode.addChildNode(camera)
@@ -56,14 +56,14 @@ struct ShopStation: Equatable {
         updateCamera(immediate: true)
     }
     private func updateCamera(immediate: Bool = false) {
-        let focusX: Float = preview ? 0 : min(1.3,max(-1.3,player.position.x * 0.6))
-        let focusZ: Float = preview ? 0 : min(1.5,max(-1.5,player.position.z - 1.5))
+        let focusX: Float = preview ? 0 : min(1.3,max(-1.3,player.position.x * 0.25))
+        let focusZ: Float = preview ? 0 : min(1.5,max(-1.5,(player.position.z - 4.7) * 0.35))
         camera.position = SCNVector3(focusX,14,12 + focusZ)
         camera.look(at: SCNVector3(focusX,0,focusZ))
     }
 
     func material(_ color: UIColor, glow: Bool = false) -> SCNMaterial {
-        let m = SCNMaterial(); m.diffuse.contents = color; m.roughness.contents = 0.85
+        let m = SCNMaterial(); m.diffuse.contents = color; m.roughness.contents = 0.85; m.emission.contents = color.withAlphaComponent(0.18); m.emission.intensity = 0.22
         if glow { m.emission.contents = color; m.lightingModel = .constant }
         return m
     }
@@ -126,6 +126,11 @@ struct ShopStation: Equatable {
                 let tape = box(0.12,0.32,0.20,at: SCNVector3(side * 0.39,Float(row) * 0.43 + 0.34,Float(slot) * 0.25 - 1.38),color: colors[(row + slot + index) % colors.count],parent: shelf,bevel: 0.008)
                 box(0.125,0.07,0.205,at: SCNVector3(0,-0.08,0),color: navy,parent: tape,bevel: 0.002)
             } } }
+            for slot in 0..<10 {
+                let colors: [UIColor] = [mint,coral,.systemYellow,.systemCyan,.systemPurple]
+                let cover = box(0.70,0.055,0.24,at: SCNVector3(0,1.49,Float(slot) * 0.30 - 1.35),color: colors[(slot + index) % colors.count],parent: shelf)
+                box(0.38,0.008,0.045,at: SCNVector3(0,0.032,0),color: .white,parent: cover,bevel: 0)
+            }
             label(index == 0 ? "CLASSICS" : "NEW",at: SCNVector3(0,1.9,1.6),width: 1.3,color: .systemYellow,parent: shelf,billboard: true,name: "station:SHELVES")
         }
         let counter = box(3,1.05,1.1,at: SCNVector3(3,0.525,-3.8),color: coral,name: "station:COUNTER")
@@ -173,8 +178,8 @@ struct ShopStation: Equatable {
         ball(0.17,at: SCNVector3(0,1.47,0),color: skin,scale: SCNVector3(1,1.05,0.9),parent: root)
         for x in [Float]([-0.16,0.16]) { ball(0.04,at: SCNVector3(x,1.47,0),color: skin,scale: SCNVector3(0.6,1,0.6),parent: root) }
         if index != 8 {
-            box(0.31,0.12,0.28,at: SCNVector3(0,1.615,-0.01),color: hair,parent: root,bevel: 0.045)
-            if [2,4,6,10,11].contains(index) { box(0.34,0.35,0.13,at: SCNVector3(0,1.46,-0.13),color: hair,parent: root,bevel: 0.06) }
+            ball(0.17,at: SCNVector3(0,1.56,-0.025),color: hair,scale: SCNVector3(1.04,0.72,0.94),parent: root)
+            if [2,4,6,10,11].contains(index) { ball(0.17,at: SCNVector3(0,1.46,-0.13),color: hair,scale: SCNVector3(1.04,1.10,0.55),parent: root) }
             if index == 6 || index == 11 { ball(0.085,at: SCNVector3(0.13,1.6,-0.15),color: hair,parent: root) }
         }
         if index == 0 || index == 3 || index == 9 { box(0.23,0.095,0.05,at: SCNVector3(0,1.36,0.125),color: hair,parent: root,bevel: 0.025) }
@@ -263,7 +268,7 @@ struct ShopStation: Equatable {
     private func walk(to target: FloorPoint,station: String?) {
         let blockers = people.values.map { FloorBlock(x: $0.presentation.position.x,z: $0.presentation.position.z,width: 0.4,depth: 0.3) }
         route = WorldLayout.path(from: FloorPoint(x: player.position.x,z: player.position.z),to: target,extra: blockers)
-        pendingStation = station; hint = station == nil ? "Walking to that tile…" : "Walking to the station…"
+        pendingStation = station; hint = station == nil ? "Walking to that tileâ€¦" : "Walking to the stationâ€¦"
     }
     private func distance(_ s: ShopStation) -> Float { hypot(player.position.x - s.x,player.position.z - s.z) }
     @objc private func step(_ link: CADisplayLink) {

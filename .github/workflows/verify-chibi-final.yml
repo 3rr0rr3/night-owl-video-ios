@@ -1,0 +1,54 @@
+name: Verify final chibi release
+on:
+  push:
+    paths: [.github/workflows/verify-chibi-final.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - name: Wait for release builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for RUN in 40367809747 40367809717; do
+            for N in {1..40}; do
+              STATUS=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq .status)
+              if [ "$STATUS" = completed ]; then
+                test "$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq .conclusion)" = success
+                break
+              fi
+              sleep 15
+            done
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40367809717
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40367809747
+          github-token: ${{ github.token }}
+      - name: Verify IPA and export previews
+        run: |
+          sips -Z 800 previews/menu.png --out previews/menu-small.png >/dev/null
+          sips -Z 800 previews/world.png --out previews/world-small.png >/dev/null
+          python3 - <<'PY'
+          import zipfile,pathlib,plistlib,struct,base64,hashlib
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          b=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',b)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='2.1'
+          print('PASS: valid arm64 IPA, version 2.1, bundle '+info['CFBundleIdentifier'])
+          print('SHA256:'+hashlib.sha256(pathlib.Path('package/NightOwl.ipa').read_bytes()).hexdigest())
+          for name in ['menu','world']:
+              print(name.upper()+'_PNG:'+base64.b64encode(pathlib.Path('previews/'+name+'-small.png').read_bytes()).decode())
+          PY

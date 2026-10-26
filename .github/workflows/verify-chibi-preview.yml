@@ -1,0 +1,26 @@
+name: Verify chibi release previews
+on:
+  push:
+    paths: [.github/workflows/verify-chibi-preview.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40366659226
+          github-token: ${{ github.token }}
+      - name: Export compact image previews
+        run: |
+          sips -Z 640 previews/menu.png --out previews/menu-small.png >/dev/null
+          sips -Z 640 previews/world.png --out previews/world-small.png >/dev/null
+          python3 - <<'PY'
+          import pathlib,base64
+          for name in ['menu','world']:
+              print(name.upper()+'_PNG:'+base64.b64encode(pathlib.Path('previews/'+name+'-small.png').read_bytes()).decode())
+          PY

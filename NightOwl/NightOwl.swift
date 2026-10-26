@@ -232,6 +232,7 @@ struct GameView: View {
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
         }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
+        .overlay(alignment: .bottom) { DeskFeedback().environmentObject(game) }
         .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
         .onAppear { showReport = game.experience.reportPending }
         .onChange(of: game.experience.reportPending) { pending in if pending { showReport = true } }

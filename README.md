@@ -33,3 +33,8 @@ Play Options on the title screen and Store PC offers half-speed Relaxed mode and
 Closing a day opens a saved report with rentals/fees, story rewards, purchases, bills, net profit, emergency support, processed tapes and tomorrow's goals. Store PC can reopen the last report. New daily accounting begins when updating to this release; previous transaction history is not reconstructed.
 
 Customize your shop in Store PC: nine poster, shelf and counter styles unlock through rental milestones. Purchases cost shop currency once; owned styles switch freely and change the illustration. No purchases use real money. New Game resets cosmetics and shop progress while retaining play options.
+
+## Scanner & register animation (2.4)
+Successful rental and return scans show a VHS barcode, a sweeping red scanner beam and an accepted checkmark. Taking payment opens the illustrated cash drawer and slides in a $10 note. Completed rentals send out change coins and print a receipt; collected return fees also animate the register. Feedback floats above the current screen so it remains visible while scrolling and does not block buttons.
+
+Reduce Motion uses a static success card. Animation timers expire after backgrounding, and effects are not saved or replayed by Continue. Repeated scans/payments, rejected change and already-collected fees do not retrigger success effects. Tests cover event amounts, action guards and save safety.

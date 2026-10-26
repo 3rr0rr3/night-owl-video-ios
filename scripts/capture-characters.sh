@@ -25,7 +25,13 @@ done
 xcrun simctl launch "$DEVICE" com.nightowl.videostore --motion
 xcrun simctl io "$DEVICE" recordVideo --codec=h264 build/store-animation.mp4 &
 VIDEO_PID=$!
-sleep 12
+sleep 4.4
+xcrun simctl io "$DEVICE" screenshot build/barcode-scan.png
+sleep 2.3
+xcrun simctl io "$DEVICE" screenshot build/cash-register.png
+sleep 2.7
+xcrun simctl io "$DEVICE" screenshot build/rental-receipt.png
+sleep 2.6
 kill -INT "$VIDEO_PID" || true
 wait "$VIDEO_PID" || true
 xcrun simctl io "$DEVICE" screenshot build/characters-in-store.png

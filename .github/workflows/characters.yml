@@ -29,6 +29,9 @@ jobs:
             build/summary.png
             build/newcharacters.png
             build/story.png
+            build/barcode-scan.png
+            build/cash-register.png
+            build/rental-receipt.png
             build/store-animation.mp4
             build/characters-in-store.png
           if-no-files-found: error

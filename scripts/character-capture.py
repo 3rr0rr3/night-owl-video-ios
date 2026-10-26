@@ -13,8 +13,12 @@ source += r'''
         s.speakingGuest = s.s.guests.first?.id
         if ProcessInfo.processInfo.arguments.contains("--motion") {
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
-                s.recommend(2); s.scan(); s.payment(); s.change = 3; s.checkout()
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                s.recommend(2); s.scan()
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                s.payment()
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                s.change = 3; s.checkout()
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 s.talk()
             }

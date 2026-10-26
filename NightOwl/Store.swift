@@ -55,6 +55,7 @@ struct Save: Codable {
     @Published var story = StoryProgress()
     @Published var speakingGuest: UUID? = nil
     @Published var rewinding: UUID? = nil
+    @Published var deskEvent: DeskEvent? = nil
     @Published var earned = 0
     @Published var effectID = UUID()
     var names: [String] { Cast.all.map { $0.name } }
@@ -128,6 +129,7 @@ struct Save: Codable {
     func newGame() {
         let relaxed = experience.relaxed; let autoChange = experience.autoChange
         experience = Experience(); experience.relaxed = relaxed; experience.autoChange = autoChange; relaxedBeat = false
+        deskEvent = nil
         s = Save(); story = StoryProgress(); speakingGuest = nil; rewinding = nil; earned = 0; effectID = UUID(); change = 0; station = "COUNTER"
         message = "Aunt June left you the keys. Explore Night Owl and open the store when you're ready."
         save()
@@ -170,8 +172,8 @@ struct Save: Codable {
         guard s.movies[i].genre == s.guests[0].genre else { say("That's not the genre they asked for. Try another shelf."); return }
         s.guests[0].movie = i; say("Great recommendation. Scan the VHS at the counter.")
     }
-    func scan() { guard !s.guests.isEmpty, s.guests[0].movie != nil else { say("Choose a movie from the shelves first."); return }; s.guests[0].scanned = true; say("Rental scanned. Collect payment, then count out the change.") }
-    func payment() { guard !s.guests.isEmpty, s.guests[0].scanned else { return }; s.guests[0].paid = true; change = experience.autoChange ? 10 - price : 0; say("Customer handed you $10. Count $\(10 - price) change.") }
+    func scan() { guard !s.guests.isEmpty, s.guests[0].movie != nil else { say("Choose a movie from the shelves first."); return }; guard !s.guests[0].scanned else { return }; s.guests[0].scanned = true; deskCue(.scan,s.movies[s.guests[0].movie!].title); say("Rental scanned. Collect payment, then count out the change.") }
+    func payment() { guard !s.guests.isEmpty, s.guests[0].scanned, !s.guests[0].paid else { return }; s.guests[0].paid = true; change = experience.autoChange ? 10 - price : 0; deskCue(.payment,"Cash drawer open",amount: 10,change: 10 - price); say("Customer handed you $10. Count $\(10 - price) change.") }
     func checkout() {
         guard let g = s.guests.first, let i = g.movie, g.paid else { return }
         if experience.autoChange { change = 10 - price }
@@ -179,6 +181,7 @@ struct Save: Codable {
         let wasGuided = guiding
         experience.tutorialDone = true; experience.customers += 1
         let total = price
+        deskCue(.sale,"Be kind. Rewind!",amount: total,change: 10 - total)
         story.rentals += 1; if g.snack { story.snacks += 1 }; cashBurst(total)
         s.movies[i].stock -= 1; s.rentals.append(i); s.money += total; s.sales += total; s.served += 1; s.xp += 8; s.guests.removeFirst(); change = 0
         say(wasGuided ? "First rental complete! +$\(total). You know the basics. Next, try the return desk." : "Be kind, rewind! Rental complete. +$\(total)")
@@ -192,10 +195,11 @@ struct Save: Codable {
     func process(_ task: String) {
         guard !s.returns.isEmpty else { return }
         switch task {
-        case "scan": s.returns[0].scanned = true; say("Return checked into the system.")
+        case "scan": guard !s.returns[0].scanned else { return }; s.returns[0].scanned = true; deskCue(.scan,"Return: " + s.movies[s.returns[0].movie].title); say("Return checked into the system.")
         case "fee":
             guard s.returns[0].scanned, !s.returns[0].assessed else { return }
             let fee = (s.returns[0].late ? 2 : 0) + (s.returns[0].damaged ? 5 : 0)
+            if fee > 0 { deskCue(.fee,"Return fees received",amount: fee) }
             s.money += fee; s.sales += fee; s.returns[0].assessed = true; say(fee > 0 ? "Collected $\(fee) in late / damage fees. Customer grumbles." : "No fees. Thanks for returning on time!")
         case "rewind": s.returns[0].rewound = true; say("Whirrr… tape rewound to the beginning.")
         default:
@@ -207,7 +211,7 @@ struct Save: Codable {
         }
         save()
     }
-    func collectHold(_ i: Int) { guard s.held.contains(i) else { return }; story.rentals += 1; experience.customers += 1; cashBurst(4); s.held.removeAll { $0 == i }; s.rentals.append(i); s.money += 4; s.sales += 4; s.xp += 5; say("Reserved rental collected. +$4") }
+    func collectHold(_ i: Int) { guard s.held.contains(i) else { return }; deskCue(.sale,"Reserved rental collected",amount: 4); story.rentals += 1; experience.customers += 1; cashBurst(4); s.held.removeAll { $0 == i }; s.rentals.append(i); s.money += 4; s.sales += 4; s.xp += 5; say("Reserved rental collected. +$4") }
     func buy(_ i: Int) { guard s.money >= 12 else { say("You need $12 to order a tape."); return }; s.money -= 12; experience.expenses += 12; s.movies[i].stock += 1; story.orders += 1; say("Delivery arrived: \(s.movies[i].title). +1 copy") }
     func clean() { guard s.dirt > 0 else { say("The store is spotless."); return }; s.dirt -= 1; s.xp += 2; story.cleanups += 1; say("Spill cleaned. A tidy store keeps customers happy.") }
     func upgrade() { let cost = 40 + s.decor * 30; guard s.money >= cost else { say("Save $\(cost) for the next store upgrade."); return }; s.money -= cost; experience.expenses += cost; s.decor += 1; s.xp += 10; say("New posters and shelf space! Store style upgraded.") }

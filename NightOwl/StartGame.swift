@@ -4,6 +4,7 @@ struct StartGameView: View {
     @EnvironmentObject var game: Store
     @State private var playing = false
     @State private var showHelp = false
+    @State private var showOptions = false
     @State private var confirmNewGame = false
     var body: some View {
         ZStack {
@@ -24,6 +25,7 @@ struct StartGameView: View {
                     } else {
                         menuButton("Start Game",icon: "play.fill",primary: true) { game.newGame(); playing = true }
                     }
+                    menuButton("Play Options",icon: "slider.horizontal.3") { showOptions = true }
                     menuButton("How to Play",icon: "questionmark.circle") { showHelp = true }
                 }.frame(maxWidth: 390)
                 Text("MAPLE STREET · 1994\nBE KIND. REWIND.").font(.system(size: 10,weight: .bold,design: .monospaced)).tracking(2).lineSpacing(6).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.45)).padding(.top,10)
@@ -37,6 +39,7 @@ struct StartGameView: View {
             Text("Open Story to follow the seven-chapter Maple Street story and meet your twelve adult regulars. Your shop autosaves while you play. Returning to the start screen pauses the shift.")
             Text("Tap Menu to save and pause. New Game asks before replacing an existing save.").foregroundStyle(.secondary)
         }.padding(24) }.background(ink).navigationTitle("How to Play").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showHelp = false } } } } }
+        .sheet(isPresented: $showOptions) { NavigationStack { ScrollView { PlayOptions().padding(24) }.background(ink).navigationTitle("Play Options").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showOptions = false } } } } }
         .alert("Start a new shop?",isPresented: $confirmNewGame) { Button("Cancel",role: .cancel) {} ; Button("Start New Game",role: .destructive) { game.newGame(); playing = true } } message: { Text("This replaces your current shop and story progress. Continue keeps your existing save.") }
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("--smoke-store") { if !game.hasSavedGame { game.newGame() }; playing = true }

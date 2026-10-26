@@ -19,11 +19,23 @@ source += r'''
                 s.talk()
             }
         }
+        s.experience = Experience(); s.experience.tutorialDone = true
+        if ProcessInfo.processInfo.arguments.contains("--tutorial") { s.experience.tutorialDone = false; s.s.guests = []; s.s.open = false }
+        if ProcessInfo.processInfo.arguments.contains("--styles") { s.s.served = 10; s.s.money = 200; for id in ["poster-space","shelf-walnut","counter-gold"] { s.selectStyle(ShopStyle.all.first { $0.id == id }!) } }
+        if ProcessInfo.processInfo.arguments.contains("--summary") { s.experience.report = DayReport(day: 1,revenue: 47,bonus: 30,purchases: 12,bills: 15,customers: 8,returns: 4,grant: 0,tomorrow: "Day 2: 8 returns expected. Check stock, process returns, and continue your Story goals.") }
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--menu") {
+            if ProcessInfo.processInfo.arguments.contains("--options") {
+                NavigationStack { ScrollView { PlayOptions().padding(24) }.background(ink).navigationTitle("Play Options") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--styles") {
+                NavigationStack { ScrollView { VStack(spacing: 20) { ShopArt(); StyleShop() }.padding(20) }.background(ink).navigationTitle("Your shop") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--summary") {
+                DayReportView().environmentObject(store)
+            } else if ProcessInfo.processInfo.arguments.contains("--tutorial") {
+                FlatGameScreen(onMenu: {}).environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--menu") {
                 StartGameView().environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--world") || ProcessInfo.processInfo.arguments.contains("--motion") {
                 FlatGameScreen(onMenu: {}).environmentObject(store).preferredColorScheme(.dark)

@@ -171,7 +171,7 @@ struct ShopArt: View {
                     HStack { Text("NIGHT OWL").font(.system(size: 23, weight: .black, design: .rounded)).foregroundStyle(mint); Spacer(); Text("VHS • 1994").font(.caption.bold()).foregroundStyle(gold) }.padding(18)
                     HStack(spacing: 13) {
                         shelf("CULT CLASSICS", 0); shelf("NEW RELEASES", 3)
-                        VStack { Image(systemName: "moon.stars.fill").font(.largeTitle).foregroundStyle(gold); Text(game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT").font(.system(size: 9, weight: .heavy)); VStack(spacing: 1) { Text("2 NIGHTS").font(.system(size: 10, weight: .black)).lineLimit(1); Text("$4").font(.system(size: 22, weight: .black, design: .rounded)) }.foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
+                        VStack { Image(systemName: game.experience.poster == "poster-space" ? "sparkles" : (game.experience.poster == "poster-creature" ? "eye.fill" : "moon.stars.fill")).font(.largeTitle).foregroundStyle(gold); Text(game.experience.poster == "poster-space" ? "SPACE PREMIERE" : (game.experience.poster == "poster-creature" ? "CREATURE NIGHT" : (game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT"))).font(.system(size: 9, weight: .heavy)); VStack(spacing: 1) { Text("2 NIGHTS").font(.system(size: 10, weight: .black)).lineLimit(1); Text("$4").font(.system(size: 22, weight: .black, design: .rounded)) }.foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
                     }.padding(.horizontal, 16)
                     Rectangle().fill(Color(red: 0.29, green: 0.26, blue: 0.38)).frame(height: 95).overlay(alignment: .bottom) {
                         HStack(spacing: 1) { ForEach(Array(game.s.guests.prefix(4))) { guest in
@@ -180,7 +180,7 @@ struct ShopArt: View {
                         }; Spacer() }.padding(.leading, 15).offset(y: 2).animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.8), value: game.s.guests.map { $0.id })
                     }
                 }
-                VStack { Spacer(); HStack { Text("▰ RETURNS \(game.s.returns.count)"); Spacer(); Text("◉ REGISTER") }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(coral).frame(height: 4) } }
+                VStack { Spacer(); HStack { Text("▰ RETURNS \(game.s.returns.count)"); Spacer(); Text("◉ REGISTER") }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
                 if game.s.decor > 0 { Image(systemName: game.storyFinished ? "star.circle.fill" : "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
             }
         }.frame(height: 275).clipShape(RoundedRectangle(cornerRadius: 18))
@@ -189,7 +189,7 @@ struct ShopArt: View {
         VStack(spacing: 5) {
             Text(title).font(.system(size: 8, weight: .black)).foregroundStyle(gold)
             ForEach(0..<2) { row in
-                HStack(spacing: 3) { ForEach(0..<6) { n in Rectangle().fill(palette[(start + row + n) % 6]).frame(height: 34).overlay(alignment: .bottom) { Rectangle().fill(ink.opacity(0.65)).frame(height: 9) } } }.padding(.horizontal, 5).padding(.bottom, 4).background(ink)
+                HStack(spacing: 3) { ForEach(0..<6) { n in Rectangle().fill(palette[(start + row + n) % 6]).frame(height: 34).overlay(alignment: .bottom) { Rectangle().fill(ink.opacity(0.65)).frame(height: 9) } } }.padding(.horizontal, 5).padding(.bottom, 4).background(game.experience.shelf == "shelf-mint" ? mint.opacity(0.6) : (game.experience.shelf == "shelf-walnut" ? Color.brown : ink))
             }
         }
     }
@@ -197,8 +197,10 @@ struct ShopArt: View {
 struct GameView: View {
     @EnvironmentObject var game: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var showReport = false
     let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC"]
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
                 HStack(alignment: .top) {
@@ -211,15 +213,30 @@ struct GameView: View {
                     if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
                 HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
+                NextTaskCard { withAnimation { proxy.scrollTo("station-actions",anchor: .top) } }
                 Button { withAnimation { game.station = "STORY" } } label: {
                     HStack { Image(systemName: game.storyFinished ? "star.fill" : "book.closed.fill"); Text(game.storyFinished ? "MAPLE STREET MOVIE NIGHT · SAVED" : "STORY \(game.story.chapter + 1)/7 · \(game.chapter.title)").font(.system(size: 11, weight: .bold)); Spacer(); Image(systemName: "chevron.right") }.foregroundStyle(gold)
                 }.buttonStyle(.plain)
-                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) { ForEach(tabs, id: \.self) { tab in Button { game.station = tab } label: { Text(tab).font(.system(size: 11, weight: .heavy)).padding(.horizontal, 14).padding(.vertical, 12).background(game.station == tab ? mint : .white.opacity(0.06)).foregroundStyle(game.station == tab ? ink : .white).clipShape(Capsule()) } } } }
-                Group { switch game.station { case "COUNTER": counter; case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(),spacing: 6),count: 3),spacing: 6) {
+                    ForEach(tabs,id: \.self) { tab in
+                        Button { game.station = tab; withAnimation { proxy.scrollTo("station-actions",anchor: .top) } } label: {
+                            HStack(spacing: 4) {
+                                Text(tab).font(.system(size: 10,weight: .heavy)).lineLimit(1).minimumScaleFactor(0.75)
+                                if game.badge(tab) > 0 { Text("\(game.badge(tab))").font(.system(size: 10,weight: .black)).padding(4).background(ink.opacity(0.15),in: Circle()) }
+                            }.frame(maxWidth: .infinity,minHeight: 44).background(game.station == tab ? mint : .white.opacity(0.06),in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(game.station == tab ? ink : .white)
+                        }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
+                    }
+                }
+                Group { switch game.station { case "COUNTER": counter; case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
         }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
+        .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
+        .onAppear { showReport = game.experience.reportPending }
+        .onChange(of: game.experience.reportPending) { pending in if pending { showReport = true } }
+
+    }
     }
     func action(_ title: String, _ symbol: String, color: Color = mint, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button { withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { run() } } label: { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)
@@ -233,11 +250,12 @@ struct GameView: View {
                 if let i = g.movie { Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
                 if g.movie == nil {
                     action("Choose a movie", "rectangle.stack") { game.station = "SHELVES" }
-                    action("Reserve a title", "bookmark", color: gold) { game.reserve() }
+                    action("Reserve a title", "bookmark", color: gold, enabled: !game.guiding) { game.reserve() }
                 } else if !g.scanned { action("Scan VHS barcode", "barcode.viewfinder") { game.scan() } }
                 else if !g.paid { action("Take $10 payment", "banknote") { game.payment() } }
                 else {
                     Text("Change due: $\(10 - game.price) • counted: $\(game.change)").font(.subheadline.bold())
+                    if game.experience.autoChange { Label("Correct change counted automatically",systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(mint) }
                     HStack { action("+$1", "plus") { game.change += 1 }; action("+$5", "plus") { game.change += 5 }; action("Reset", "arrow.counterclockwise", color: coral) { game.change = 0 } }
                     action("Give change & rent", "checkmark.circle") { game.checkout() }
                 }
@@ -263,7 +281,7 @@ struct GameView: View {
     var shelves: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("PICK THE PERFECT TAPE", "6 genres")
-            if let g = game.s.guests.first { Text("Customer wants \(g.genre)").font(.caption.bold()).foregroundStyle(mint) }
+            if let g = game.s.guests.first { Text("Customer wants \(g.genre) — matching tapes are highlighted").font(.caption.bold()).foregroundStyle(mint) }
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 ForEach(game.s.movies) { m in
                     Button { game.recommend(m.id); if game.s.guests.first?.movie != nil { game.station = "COUNTER" } } label: {
@@ -272,6 +290,8 @@ struct GameView: View {
                             Text(m.genre).font(.system(size: 9, weight: .heavy)).foregroundStyle(palette[m.id]); Text("\(m.stock) on shelf · $4 rental").font(.caption2).foregroundStyle(.secondary)
                         }.padding(9).background(.white.opacity(0.04)).clipShape(RoundedRectangle(cornerRadius: 12))
                     }.buttonStyle(.plain)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(game.s.guests.first?.genre == m.genre ? mint : .clear,lineWidth: 2))
+                    .disabled(m.stock == 0 || game.s.guests.first == nil || game.s.guests.first?.movie != nil)
                 }
             }
         }
@@ -282,12 +302,15 @@ struct GameView: View {
             Text("DAILY TASKS").font(.caption.bold()).foregroundStyle(gold)
             Text("Rent movies • Recommend genres • Make change\nScan returns • Collect fees • Rewind & shelve\nTake reservations • Serve popcorn • Order stock").font(.caption).foregroundStyle(.secondary).lineSpacing(5)
             action("Clean store · \(game.s.dirt) spills", "sparkles", color: gold) { game.clean() }
-            action("Decorate & expand · $\(40 + game.s.decor * 30)", "paintbrush") { game.upgrade() }
+            DisclosureGroup("Customize your shop") { StyleShop().padding(.top,12) }.tint(mint)
+            DisclosureGroup("Play options") { PlayOptions().padding(.top,12) }.tint(mint)
             action(game.s.staff ? "Bea is hired · $15/day" : "Hire Bea · $60", "person.crop.circle.badge.plus", enabled: !game.s.staff) { game.hire() }
             Text("ORDER TAPES · $12 EACH").font(.caption.bold()).foregroundStyle(gold)
             ForEach(game.s.movies) { m in action("\(m.title) · stock \(m.stock)", "shippingbox", color: palette[m.id]) { game.buy(m.id) } }
-            action("Close day & pay bills", "moon.zzz", color: coral) { game.nextDay() }
-            Text("Autosaved on this iPhone. A day lasts about 20 minutes. Every third day brings a rainy-day rush. Staff clean and rewind; you handle rentals and fees.").font(.caption).foregroundStyle(.secondary)
+            if game.experience.report != nil { action("View last shift summary", "chart.bar.doc.horizontal",color: gold) { showReport = true } }
+            action("Close day & pay bills", "moon.zzz", color: coral,enabled: game.s.guests.isEmpty && game.s.returns.isEmpty) { game.nextDay() }
+            if !game.s.guests.isEmpty || !game.s.returns.isEmpty { Text("Finish the customer queue and return bin to close the day.").font(.caption).foregroundStyle(.secondary) }
+            Text("Autosaved on this iPhone. A normal day lasts about 20 minutes; Relaxed mode doubles it. Every third day brings a rainy-day rush. Staff clean and rewind; you handle rentals and fees.").font(.caption).foregroundStyle(.secondary)
         }
     }
     func title(_ text: String, _ detail: String) -> some View { HStack { Text(text).font(.system(size: 13, weight: .black, design: .monospaced)); Spacer(); Text(detail).font(.caption2).foregroundStyle(.secondary) } }

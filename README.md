@@ -24,3 +24,12 @@ The macOS workflow tests the complete campaign, dialogue accounting, one-time pa
 The game uses the original 2D illustrated shop, adult paper-cutout customers and direct station tabs. The 3D renderer, movement controls and SceneKit dependency have been removed. Adult portrait proportions match the original art. Story chapters, character animations, rental tasks and existing saves remain.
 
 The title screen keeps Start Game, Continue, New Game and How to Play. Menu saves and pauses the shift. Gameplay advances only while the store screen is active; app backgrounding saves progress. CI tests shop rules and story progression, builds the arm64 IPA, and captures the title and illustrated store in the iPhone simulator.
+
+## Friendly shop update (2.3)
+New shops have a five-step first-customer guide with the clock paused and one visitor at a time. Skip is always available. Existing saves bypass onboarding. A contextual next-task card jumps to the right station, matching genres are highlighted, and station badges show waiting customers, returns/holds, ready story rewards and cleaning tasks.
+
+Play Options on the title screen and Store PC offers half-speed Relaxed mode and independent automatic change counting. Rentals still require confirmation. Options persist between sessions and new games.
+
+Closing a day opens a saved report with rentals/fees, story rewards, purchases, bills, net profit, emergency support, processed tapes and tomorrow's goals. Store PC can reopen the last report. New daily accounting begins when updating to this release; previous transaction history is not reconstructed.
+
+Customize your shop in Store PC: nine poster, shelf and counter styles unlock through rental milestones. Purchases cost shop currency once; owned styles switch freely and change the illustration. No purchases use real money. New Game resets cosmetics and shop progress while retaining play options.

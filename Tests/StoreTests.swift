@@ -2,6 +2,7 @@ import Foundation
 
 @main struct StoreTests {
     @MainActor static func main() async {
+        UserDefaults.standard.removeObject(forKey: "nightowl.experience")
         UserDefaults.standard.removeObject(forKey: "nightowl.save")
         UserDefaults.standard.removeObject(forKey: "nightowl.story")
         let store = Store()
@@ -117,8 +118,46 @@ import Foundation
         var oldSave = Save(); oldSave.day = 9; oldSave.money = 321
         UserDefaults.standard.set(try! JSONEncoder().encode(oldSave), forKey: "nightowl.save")
         UserDefaults.standard.removeObject(forKey: "nightowl.story")
+        UserDefaults.standard.removeObject(forKey: "nightowl.experience")
         let migrated = Store()
+        assert(migrated.experience.tutorialDone, "Legacy saves skip new-player tutorial")
         assert(migrated.s.day == 9 && migrated.s.money == 321 && migrated.story.chapter == 0)
+        let guided = Store(); guided.newGame()
+        assert(guided.guiding && guided.tutorialStep == 1 && guided.nextTask.station == "COUNTER")
+        guided.doors(); let firstGuest = guided.s.guests[0]
+        guided.addGuest(); assert(guided.s.guests.count == 1, "Guide isolates one customer")
+        let pausedClock = guided.s.minutes; guided.tick(); assert(guided.s.minutes == pausedClock)
+        assert(guided.tutorialStep == 2 && guided.badge("COUNTER") == 1 && guided.badge("RETURNS") == 2)
+        let movie = guided.s.movies.first { $0.genre == firstGuest.genre }!.id
+        guided.recommend(movie); assert(guided.tutorialStep == 3 && guided.nextTask.station == "COUNTER")
+        guided.scan(); assert(guided.tutorialStep == 4)
+        guided.experience.autoChange = true; guided.payment(); assert(guided.tutorialStep == 5 && guided.change == 10 - guided.price)
+        guided.change = 999; guided.checkout()
+        assert(!guided.guiding && guided.s.served == 1 && guided.experience.customers == 1)
+        guided.experience.relaxed = true
+        let slowClock = guided.s.minutes; guided.tick(); guided.tick(); assert(guided.s.minutes == slowClock + 1)
+        guided.experience.relaxed = false; guided.tick(); assert(guided.s.minutes == slowClock + 2)
+        let locked = ShopStyle.all.first { $0.id == "poster-space" }!
+        let beforeStyle = guided.s.money; guided.selectStyle(locked); assert(guided.s.money == beforeStyle)
+        guided.s.served = 10; guided.selectStyle(locked)
+        assert(guided.experience.poster == locked.id && guided.s.money == beforeStyle - 20 && guided.s.decor == 1)
+        guided.selectStyle(locked); assert(guided.s.money == beforeStyle - 20, "Owned styles never charge twice")
+        guided.s.money = 0; let shelf = ShopStyle.all.first { $0.id == "shelf-mint" }!
+        guided.selectStyle(shelf); assert(!guided.experience.owned.contains(shelf.id))
+        guided.s.money = 100; guided.buy(0)
+        guided.s.guests = []; guided.s.returns = []; guided.s.sales = 11; guided.experience.bonus = 30; guided.experience.returns = 2
+        let oldDay = guided.s.day; guided.nextDay()
+        let report = guided.experience.report!
+        assert(report.day == oldDay && report.revenue == 11 && report.bonus == 30 && report.purchases == 32 && report.bills == 15 && report.profit == -6)
+        assert(report.customers == 1 && report.returns == 2 && guided.experience.reportPending)
+        assert(guided.experience.expenses == 0 && guided.experience.customers == 0 && guided.s.day == oldDay + 1)
+        let reportID = report.id; guided.nextDay(); assert(guided.experience.report?.id == reportID, "Cannot close an unplayed day")
+        guided.save(); let savedExperience = Store()
+        assert(savedExperience.experience.poster == locked.id && savedExperience.experience.report?.id == reportID && savedExperience.experience.autoChange)
+        guided.dismissReport(); assert(!guided.experience.reportPending)
+        guided.newGame(); assert(guided.guiding && guided.experience.autoChange && guided.experience.poster == "poster-owl" && guided.experience.report == nil)
+        guided.skipTutorial(); assert(!guided.guiding)
+        print("PASS: guided rental steps, clock pause, badges, automatic change, relaxed clock, style locks and purchases, report accounting, migration and persistence")
         migrated.newGame()
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)
         let newSave = Store(); assert(newSave.hasSavedGame && newSave.s.money == 150 && newSave.s.day == 1)

@@ -23,6 +23,10 @@ jobs:
           path: |
             build/menu.png
             build/world.png
+            build/tutorial.png
+            build/options.png
+            build/styles.png
+            build/summary.png
             build/newcharacters.png
             build/story.png
             build/store-animation.mp4

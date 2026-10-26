@@ -1,0 +1,35 @@
+name: Review scanner video frames
+on:
+  push:
+    paths: [.github/workflows/review-desk-video.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40379968940
+          github-token: ${{ github.token }}
+      - name: Extract recorded scan sequence
+        run: |
+          cat > /tmp/frames.swift <<'SWIFT'
+          import AVFoundation
+          import AppKit
+          let asset = AVURLAsset(url: URL(fileURLWithPath: "previews/store-animation.mp4"))
+          let generator = AVAssetImageGenerator(asset: asset)
+          generator.appliesPreferredTrackTransform = true
+          generator.maximumSize = CGSize(width: 800,height: 800)
+          generator.requestedTimeToleranceBefore = .zero
+          generator.requestedTimeToleranceAfter = .zero
+          for (index,time) in [1.0,2.0,3.0,4.0].enumerated() {
+              let cg = try generator.copyCGImage(at: CMTime(seconds: time,preferredTimescale: 600),actualTime: nil)
+              let data = NSBitmapImageRep(cgImage: cg).representation(using: .png,properties: [:])!
+              print("FRAME_\(index)_PNG:" + data.base64EncodedString())
+          }
+          SWIFT
+          swift /tmp/frames.swift

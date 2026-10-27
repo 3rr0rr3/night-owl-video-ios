@@ -1,0 +1,65 @@
+name: Inspect shopkeeper transaction scenes
+on:
+  push:
+    paths: [.github/workflows/inspect-selling.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: macos-15
+    steps:
+      - name: Wait for game and recording
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for RUN in 40519830663 40519830772; do
+            READY=0
+            for N in {1..75}; do
+              STATE=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq '.status+" "+(.conclusion//"")' 2>/dev/null || true)
+              if [ "$STATE" = "completed success" ]; then READY=1; break; fi
+              case "$STATE" in "completed failure"|"completed cancelled") exit 1;; esac
+              sleep 15
+            done
+            test "$READY" = 1
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40519830772
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40519830663
+          github-token: ${{ github.token }}
+      - name: Verify package and extract transaction frames
+        run: |
+          python3 - <<'PY'
+          import zipfile,plistlib,struct
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          b=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',b)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='2.7'
+          print('PASS: valid arm64 IPA 2.7')
+          PY
+          cat > /tmp/frames.swift <<'SWIFT'
+          import AVFoundation
+          import AppKit
+          let asset = AVURLAsset(url:URL(fileURLWithPath:"previews/store-animation.mp4"))
+          let generator = AVAssetImageGenerator(asset:asset)
+          generator.appliesPreferredTrackTransform = true
+          generator.maximumSize = CGSize(width:800,height:800)
+          generator.requestedTimeToleranceBefore = .zero
+          generator.requestedTimeToleranceAfter = .zero
+          for (name,time) in [("SCAN",2.0),("PAY",4.0),("RECEIPT",7.0)] {
+              let cg = try generator.copyCGImage(at:CMTime(seconds:time,preferredTimescale:600),actualTime:nil)
+              let data = NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:])!
+              print(name+"_PNG:"+data.base64EncodedString())
+          }
+          SWIFT
+          swift /tmp/frames.swift

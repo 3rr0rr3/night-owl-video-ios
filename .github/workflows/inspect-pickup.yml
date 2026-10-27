@@ -60,7 +60,7 @@ jobs:
           generator.maximumSize = CGSize(width:800,height:800)
           generator.requestedTimeToleranceBefore = .zero
           generator.requestedTimeToleranceAfter = .zero
-          for (index,time) in [6.5,7.5,8.5,9.3].enumerated() {
+          for (index,time) in [2.5,3.5,4.5,5.5].enumerated() {
               let cg = try generator.copyCGImage(at:CMTime(seconds:time,preferredTimescale:600),actualTime:nil)
               let data = NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:])!
               print("PICKUP_\(index)_PNG:"+data.base64EncodedString())

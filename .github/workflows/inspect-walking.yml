@@ -57,7 +57,7 @@ jobs:
           generator.maximumSize = CGSize(width:800,height:800)
           generator.requestedTimeToleranceBefore = .zero
           generator.requestedTimeToleranceAfter = .zero
-          for (index,time) in [1.5,2.0,10.0,11.0,12.0,13.0].enumerated() {
+          for (index,time) in [3.5,4.0,11.5,12.0,13.5,14.0].enumerated() {
               let cg = try generator.copyCGImage(at:CMTime(seconds:time,preferredTimescale:600),actualTime:nil)
               let data = NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:])!
               print("WALK_\(index)_PNG:"+data.base64EncodedString())

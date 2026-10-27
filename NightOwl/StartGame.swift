@@ -57,7 +57,8 @@ struct FlatGameScreen: View {
     @EnvironmentObject var game: Store
     @Environment(\.scenePhase) private var phase
     let onMenu: () -> Void
-    private func syncAudio() { if phase == .active { ShopAudio.shared.ambience(enabled: game.neighborhood.music,rain: game.s.day % 3 == 0) } else { ShopAudio.shared.stop() } }
+    @Environment(\.dynamicTypeSize) private var systemText
+    private func syncAudio() { ShopAudio.shared.volumes(effects:game.cinema.effectsVolume,music:game.cinema.musicVolume); if phase == .active { ShopAudio.shared.ambience(enabled: game.neighborhood.music,rain: game.s.day % 3 == 0) } else { ShopAudio.shared.stop() } }
     private let timer = Timer.publish(every: 2,on: .main,in: .common).autoconnect()
     var body: some View {
         NavigationStack {
@@ -65,9 +66,12 @@ struct FlatGameScreen: View {
                 .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Menu") { game.save(); onMenu() }.accessibilityLabel("Save and pause game") } }
                 .navigationBarTitleDisplayMode(.inline)
         }
+        .dynamicTypeSize(game.cinema.largeText ? .xxxLarge : systemText)
+        .onChange(of: game.cinema.effectsVolume) { _ in syncAudio() }
+        .onChange(of: game.cinema.musicVolume) { _ in syncAudio() }
         .onAppear { syncAudio(); if ProcessInfo.processInfo.arguments.contains("--smoke-store") { precondition(ShopAudio.shared.validate(),"Generated audio must be playable"); print("PASS: original synthesized WAV is playable") } }
         .onDisappear { ShopAudio.shared.stop() }
-        .onChange(of: game.deskEvent?.id) { _ in if game.neighborhood.effects, let event = game.deskEvent { ShopAudio.shared.cue(event.kind == .scan ? "scan" : "cash") } }
+        .onChange(of: game.deskEvent?.id) { _ in if game.cinema.haptics { UIImpactFeedbackGenerator(style:.light).impactOccurred() }; if game.neighborhood.effects, let event = game.deskEvent { ShopAudio.shared.cue(event.kind == .scan ? "scan" : "cash") } }
         .onChange(of: game.rewinding) { value in if value != nil && game.neighborhood.effects { ShopAudio.shared.cue("rewind") } }
         .onChange(of: game.neighborhood.music) { _ in syncAudio() }
         .onChange(of: game.s.day) { _ in syncAudio() }

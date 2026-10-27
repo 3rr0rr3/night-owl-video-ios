@@ -6,15 +6,15 @@ struct VHSCover: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                LinearGradient(colors: [palette[movie.id].opacity(0.6),ink],startPoint: .topLeading,endPoint: .bottomTrailing)
+                LinearGradient(colors: [palette[(movie.id + movie.id / 6) % 6].opacity(0.6),ink],startPoint: .topLeading,endPoint: .bottomTrailing)
                 Canvas { context,size in
                     var c = context
                     c.scaleBy(x: size.width / 160,y: size.height / 210)
                     func oval(_ x: Double,_ y: Double,_ w: Double,_ h: Double,_ color: Color) { c.fill(Path(ellipseIn: CGRect(x: x,y: y,width: w,height: h)),with: .color(color)) }
                     func rect(_ x: Double,_ y: Double,_ w: Double,_ h: Double,_ color: Color) { c.fill(Path(CGRect(x: x,y: y,width: w,height: h)),with: .color(color)) }
                     func shape(_ points: [CGPoint],_ color: Color) { var p = Path(); p.addLines(points); p.closeSubpath(); c.fill(p,with: .color(color)) }
-                    for n in 0..<20 { oval(Double((n * 47 + 13) % 150),Double((n * 23 + 19) % 112),2,2,.white.opacity(0.5)) }
-                    switch movie.id {
+                    for n in 0..<20 { oval(Double((n * 47 + 13 + movie.id * 11) % 150),Double((n * 23 + 19) % 112),2,2,.white.opacity(0.5)) }
+                    switch movie.id % 6 {
                     case 0:
                         oval(86,40,58,58,gold); oval(100,45,16,16,.orange.opacity(0.35))
                         shape([CGPoint(x: 0,y: 146),CGPoint(x: 55,y: 94),CGPoint(x: 105,y: 132),CGPoint(x: 160,y: 90),CGPoint(x: 160,y: 190),CGPoint(x: 0,y: 190)],.purple)
@@ -57,7 +57,7 @@ struct VHSCover: View {
                     HStack { Text(rare ? "COLLECTOR’S CUT" : "NIGHT OWL VIDEO"); Spacer(); Text("VHS") }.font(.system(size: max(5,geo.size.width * 0.045),weight: .black,design: .monospaced)).padding(6).background(ink.opacity(0.9))
                     Text(movie.title.uppercased()).font(.system(size: max(9,geo.size.width * 0.13),weight: .black,design: .rounded)).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.65).shadow(color: .black,radius: 3).padding(.horizontal,8)
                     Spacer()
-                    Text(["THE SHOPS ARE CLOSED. THE GALAXY IS OPEN.","SOME CAMPERS NEVER CHECK OUT.","ONE DAD. ZERO CHILL.","HIS LAST STOP IS JUST THE BEGINNING.","LOVE IS WORTH REWINDING.","SMALL SLEUTHS. BIG CLUES."][movie.id]).font(.system(size: max(5,geo.size.width * 0.045),weight: .heavy)).multilineTextAlignment(.center).padding(7).background(ink.opacity(0.8))
+                    Text(["THE SHOPS ARE CLOSED. THE GALAXY IS OPEN.","SOME CAMPERS NEVER CHECK OUT.","ONE DAD. ZERO CHILL.","HIS LAST STOP IS JUST THE BEGINNING.","LOVE IS WORTH REWINDING.","SMALL SLEUTHS. BIG CLUES."][movie.id % 6]).font(.system(size: max(5,geo.size.width * 0.045),weight: .heavy)).multilineTextAlignment(.center).padding(7).background(ink.opacity(0.8))
                 }.foregroundStyle(.white)
             }.overlay(alignment: .leading) { Rectangle().fill(.black.opacity(0.4)).frame(width: 6) }
                 .clipShape(RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).stroke(rare ? gold : .white.opacity(0.2),lineWidth: rare ? 3 : 1))

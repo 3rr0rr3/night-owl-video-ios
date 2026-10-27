@@ -170,7 +170,7 @@ struct ShopArt: View {
                 VStack(spacing: 0) {
                     HStack { Text("NIGHT OWL").font(.system(size: 23, weight: .black, design: .rounded)).foregroundStyle(mint); Spacer(); Text("VHS • 1994").font(.caption.bold()).foregroundStyle(gold) }.padding(18)
                     HStack(spacing: 13) {
-                        shelf("CULT CLASSICS", 0); shelf("NEW RELEASES", 3)
+                        shelf("CULT CLASSICS", 0).onTapGesture { game.station = "SHELVES" }; shelf("NEW RELEASES", 3).onTapGesture { game.station = "SHELVES" }
                         VStack { Image(systemName: game.experience.poster == "poster-space" ? "sparkles" : (game.experience.poster == "poster-creature" ? "eye.fill" : "moon.stars.fill")).font(.largeTitle).foregroundStyle(gold); Text(game.experience.poster == "poster-space" ? "SPACE PREMIERE" : (game.experience.poster == "poster-creature" ? "CREATURE NIGHT" : (game.s.day % 3 == 0 ? "RAINY FRIDAY" : "MOVIE NIGHT"))).font(.system(size: 9, weight: .heavy)); VStack(spacing: 1) { Text("2 NIGHTS").font(.system(size: 10, weight: .black)).lineLimit(1); Text("$4").font(.system(size: 22, weight: .black, design: .rounded)) }.foregroundStyle(mint) }.frame(width: 82, height: 113).background(ink).clipShape(RoundedRectangle(cornerRadius: 6))
                     }.padding(.horizontal, 16)
                     Rectangle().fill(Color(red: 0.29, green: 0.26, blue: 0.38)).frame(height: 95).overlay(alignment: .bottom) {
@@ -180,7 +180,7 @@ struct ShopArt: View {
                         }; Spacer() }.padding(.leading, 15).offset(y: 2).animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.8), value: game.s.guests.map { $0.id })
                     }
                 }
-                VStack { Spacer(); HStack { Text("▰ RETURNS \(game.s.returns.count)"); Spacer(); Text("◉ REGISTER") }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
+                VStack { Spacer(); HStack { Button("▰ RETURNS \(game.s.returns.count)") { game.station = "RETURNS" }.frame(minHeight:44); Spacer(); Button("◉ REGISTER") { game.station = "COUNTER" }.frame(minHeight:44) }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
                 if game.s.decor > 0 { Image(systemName: game.storyFinished ? "star.circle.fill" : "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
             }
         }.frame(height: 275).clipShape(RoundedRectangle(cornerRadius: 18))
@@ -282,27 +282,14 @@ struct GameView: View {
             if !game.s.reservations.isEmpty { Text("Waiting for return: " + game.s.reservations.map { game.s.movies[$0].title }.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary) }
         }
     }
-    var shelves: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            title("PICK THE PERFECT TAPE", "6 genres")
-            if let g = game.s.guests.first { Text("Customer wants \(g.genre) — matching tapes are highlighted").font(.caption.bold()).foregroundStyle(mint) }
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(game.s.movies) { m in
-                    Button { game.recommend(m.id); if game.s.guests.first?.movie != nil { game.station = "COUNTER" } } label: {
-                        VStack(alignment: .leading, spacing: 7) {
-                            VHSCover(movie: m).frame(height: 180).frame(maxWidth: .infinity)
-                            Text(m.genre).font(.system(size: 9, weight: .heavy)).foregroundStyle(palette[m.id]); Text("\(m.stock) on shelf · $4 rental").font(.caption2).foregroundStyle(.secondary)
-                        }.padding(9).background(.white.opacity(0.04)).clipShape(RoundedRectangle(cornerRadius: 12))
-                    }.buttonStyle(.plain)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(game.s.guests.first?.genre == m.genre ? mint : .clear,lineWidth: 2))
-                    .disabled(m.stock == 0 || game.s.guests.first == nil || game.s.guests.first?.movie != nil)
-                }
-            }
-        }
-    }
+    var shelves: some View { FilmBrowser() }
     var pc: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("STORE MANAGEMENT", "OWL-OS 94")
+            DisclosureGroup("Customer notebook") { CustomerNotebook().padding(.top,12) }.tint(mint)
+            DisclosureGroup("Equipment upgrades") { EquipmentPanel().padding(.top,12) }.tint(mint)
+            DisclosureGroup("Optional surprises") { SurprisePanel().padding(.top,12) }.tint(mint)
+            DisclosureGroup("Export / import shop") { BackupPanel().padding(.top,12) }.tint(mint)
             DisclosureGroup("Events, friends & rare tapes") { NeighborhoodPanel().padding(.top,12) }.tint(mint)
             DisclosureGroup("Hands-on chores") { ChoreBench().padding(.top,12) }.tint(mint)
             Text("DAILY TASKS").font(.caption.bold()).foregroundStyle(gold)
@@ -311,11 +298,10 @@ struct GameView: View {
             DisclosureGroup("Customize your shop") { StyleShop().padding(.top,12) }.tint(mint)
             DisclosureGroup("Play options") { PlayOptions().padding(.top,12) }.tint(mint)
             action(game.s.staff ? "Bea is hired · $15/day" : "Hire Bea · $60", "person.crop.circle.badge.plus", enabled: !game.s.staff) { game.hire() }
-            Text("ORDER TAPES · $12 EACH").font(.caption.bold()).foregroundStyle(gold)
-            ForEach(game.s.movies) { m in action("\(m.title) · stock \(m.stock)", "shippingbox", color: palette[m.id]) { game.buy(m.id) } }
+            DisclosureGroup("Order films · $\(game.orderCost) per copy") { FilmBrowser(ordering:true).padding(.top,12) }.tint(mint)
             if game.experience.report != nil { action("View last shift summary", "chart.bar.doc.horizontal",color: gold) { showReport = true } }
-            action("Close day & pay bills", "moon.zzz", color: coral,enabled: game.s.guests.isEmpty && game.s.returns.isEmpty) { game.nextDay() }
-            if !game.s.guests.isEmpty || !game.s.returns.isEmpty { Text("Finish the customer queue and return bin to close the day.").font(.caption).foregroundStyle(.secondary) }
+            action("Close day & pay bills", "moon.zzz", color: coral,enabled: game.canCloseShift) { game.nextDay() }
+            if !game.canCloseShift { Text("Finish the queue. Your return carryover capacity is \(game.carryReturns).").font(.caption).foregroundStyle(.secondary) }
             Text("Autosaved on this iPhone. A normal day lasts about 20 minutes; Relaxed mode doubles it. Every third day brings a rainy-day rush. Staff clean and rewind; you handle rentals and fees.").font(.caption).foregroundStyle(.secondary)
         }
     }

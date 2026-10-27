@@ -2,7 +2,7 @@ import Foundation
 
 @main struct StoreTests {
     @MainActor static func main() async {
-        for key in ["nightowl.neighborhood","nightowl.active-slot","nightowl.slot.0","nightowl.slot.1","nightowl.slot.2"] { UserDefaults.standard.removeObject(forKey: key) }
+        for key in ["nightowl.cinema","nightowl.before-import.0","nightowl.neighborhood","nightowl.active-slot","nightowl.slot.0","nightowl.slot.1","nightowl.slot.2"] { UserDefaults.standard.removeObject(forKey: key) }
         UserDefaults.standard.removeObject(forKey: "nightowl.experience")
         UserDefaults.standard.removeObject(forKey: "nightowl.save")
         UserDefaults.standard.removeObject(forKey: "nightowl.story")
@@ -199,6 +199,44 @@ import Foundation
         town.switchSlot(2); assert(!town.hasSavedGame)
         town.switchSlot(0); assert(town.s.money == 777)
         print("PASS: friendships, gifts, repeat-chat guards, donations, trades, event rewards, mood hints, repairs, reputation deliveries and independent save slots")
+        let library = Store(); library.newGame()
+        assert(library.s.movies.count == 30 && Set(library.s.movies.map { $0.title }).count == 30)
+        assert(library.s.movies.enumerated().allSatisfy { $0.offset == $0.element.id })
+        assert(library.s.movies.allSatisfy { FilmLibrary.details($0).tags.count == 2 && !FilmLibrary.details($0).synopsis.isEmpty })
+        var legacyShop = Save(); legacyShop.money = 456; legacyShop.movies[0].stock = 1
+        library.s = legacyShop; library.expandCatalog(); library.expandCatalog()
+        assert(library.s.money == 456 && library.s.movies[0].stock == 1 && library.s.movies.count == 30)
+        library.s.guests = [Guest(name:Cast.all[0].name,genre:"SCI-FI")]
+        library.recommend(6); library.scan(); library.payment(); library.change = 6; library.checkout()
+        assert(library.cinema.history["0"] == [6])
+        library.s.money = 500
+        for upgrade in ["rewinder","bin","desk","ordering"] { library.equipment(upgrade) }
+        assert(library.s.money == 270 && library.orderCost == 10 && library.carryReturns == 4)
+        library.equipment("rewinder"); assert(library.s.money == 270)
+        let orderMoney = library.s.money; library.buy(10); assert(library.s.money == orderMoney - 10)
+        library.s.guests = []; library.skipTutorial()
+        for _ in 0..<9 { library.addGuest() }; assert(library.s.guests.count == 7)
+        library.s.guests = []; library.s.returns = [Tape(movie:0),Tape(movie:1)]; library.s.open = true
+        assert(library.canCloseShift)
+        library.startRewind(); try? await Task.sleep(nanoseconds:1_300_000_000); assert(library.s.returns[0].rewound)
+        library.cinema.surpriseDay = 0; library.cinema.surprise = nil; library.experience.relaxed = true; library.offerSurprise(); assert(library.cinema.surprise == nil)
+        library.experience.relaxed = false; library.offerSurprise(); let beforeSurprise = library.s.money
+        library.finishSurprise(movie:0); assert(library.s.money == beforeSurprise)
+        library.finishSurprise(movie:(library.s.day*7)%library.s.movies.count); library.finishSurprise(movie:(library.s.day*7)%library.s.movies.count)
+        assert(library.s.money == beforeSurprise + 5)
+        let exported = try! library.exportShop(); let decoded = try! library.validateBackup(exported)
+        assert(decoded.cinema?.history["0"] == [6] && decoded.shop.movies.count == 30)
+        let sourceMoney = library.s.money; library.s.money = 18; try! library.importShop(exported)
+        assert(library.s.money == sourceMoney && UserDefaults.standard.data(forKey:"nightowl.before-import.0") != nil)
+        do { try library.importShop(Data("bad backup".utf8)); assertionFailure("Invalid backup accepted") } catch {}
+        assert(library.s.money == sourceMoney)
+        var invalid = decoded; invalid.shop.returns = [Tape(movie:999)]
+        do { try library.importShop(try JSONEncoder().encode(invalid)); assertionFailure("Invalid tape ID accepted") } catch {}
+        let legacyBundle = ShopSlot(shop:Save(),story:StoryProgress(),experience:Experience(),neighborhood:Neighborhood())
+        try! library.importShop(try! JSONEncoder().encode(legacyBundle)); assert(library.s.movies.count == 30)
+        library.s.money = 333; library.cinema.largeText = true; library.save(); library.switchSlot(1); library.switchSlot(0)
+        assert(library.s.money == 333 && library.cinema.largeText)
+        print("PASS: 30-film migration and metadata, rental notebook, equipment effects, seven-customer queue, fast rewind, optional surprises, validated backup round-trip and legacy import")
         migrated.newGame()
         assert(migrated.deskEvent == nil)
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)

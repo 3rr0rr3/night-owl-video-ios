@@ -18,6 +18,7 @@ struct ShopSlot: Codable {
     var story: StoryProgress
     var experience: Experience
     var neighborhood: Neighborhood
+    var cinema: CinemaProgress? = nil
 }
 struct ShopEvent {
     let title: String
@@ -44,7 +45,8 @@ extension Store {
         }
     }
     func discoverRare(_ id: Int) {
-        if !neighborhood.rare.contains(id) { neighborhood.rare.append(id) }
+        let edition = id % 6
+        if !neighborhood.rare.contains(edition) { neighborhood.rare.append(edition) }
     }
     func donationBox() {
         guard neighborhood.searchedDay != s.day else { say("The donation box is empty. Check again tomorrow."); return }
@@ -97,11 +99,11 @@ extension Store {
         selectedSlot = slot; UserDefaults.standard.set(slot,forKey: "nightowl.active-slot")
         deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; station = "COUNTER"
         if let saved = slotInfo(slot) {
-            s = saved.shop; story = saved.story; experience = saved.experience; neighborhood = saved.neighborhood
+            s = saved.shop; story = saved.story; experience = saved.experience; neighborhood = saved.neighborhood; cinema = saved.cinema ?? CinemaProgress(); expandCatalog()
             say("Shop \(slot + 1) loaded. Welcome back to Night Owl.")
         } else {
-            s = Save(); story = StoryProgress(); experience = Experience(); neighborhood = Neighborhood()
-            for key in ["nightowl.save","nightowl.story","nightowl.experience","nightowl.neighborhood"] { UserDefaults.standard.removeObject(forKey: key) }
+            s = Save(); story = StoryProgress(); experience = Experience(); neighborhood = Neighborhood(); cinema = CinemaProgress(); expandCatalog()
+            for key in ["nightowl.save","nightowl.story","nightowl.experience","nightowl.neighborhood","nightowl.cinema"] { UserDefaults.standard.removeObject(forKey: key) }
             message = "Shop \(slot + 1) is empty. Start Game to open a new shop."
         }
     }

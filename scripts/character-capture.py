@@ -29,11 +29,18 @@ source += r'''
         if ProcessInfo.processInfo.arguments.contains("--summary") { s.experience.report = DayReport(day: 1,revenue: 47,bonus: 30,purchases: 12,bills: 15,customers: 8,returns: 4,grant: 0,tomorrow: "Day 2: 8 returns expected. Check stock, process returns, and continue your Story goals.") }
         s.neighborhood = Neighborhood()
         if ProcessInfo.processInfo.arguments.contains("--neighborhood") { s.neighborhood.rare = [0,1,3]; s.neighborhood.reputation = 30; s.neighborhood.friendship = ["0":3,"6":6] }
+        s.expandCatalog()
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--covers") {
+            if ProcessInfo.processInfo.arguments.contains("--library") {
+                NavigationStack { ScrollView { FilmBrowser().padding(20) }.background(ink).navigationTitle("Film library") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--notebook") {
+                NavigationStack { ScrollView { CustomerNotebook().padding(20) }.background(ink).navigationTitle("Notebook") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--equipment") {
+                NavigationStack { ScrollView { EquipmentPanel().padding(20) }.background(ink).navigationTitle("Equipment") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--covers") {
                 ScrollView { VStack(spacing: 14) { Text("NIGHT OWL · VHS COLLECTION").font(.headline).foregroundStyle(mint); LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())],spacing: 12) { ForEach(store.s.movies) { movie in VHSCover(movie: movie).frame(height: 205) } } }.padding(20) }.background(ink).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--neighborhood") {
                 NavigationStack { ScrollView { NeighborhoodPanel().padding(20) }.background(ink).navigationTitle("Maple Street") }.environmentObject(store).preferredColorScheme(.dark)

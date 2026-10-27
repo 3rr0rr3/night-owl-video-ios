@@ -28,6 +28,7 @@ struct PlayOptions: View {
             Text("Original synthesized music and effects. Respects silent mode and pauses in the background.").font(.caption).foregroundStyle(.secondary)
             Toggle("Mood-based customer requests",isOn: $game.neighborhood.moods)
             Text("Keep genre labels visible on Shelves, or turn this off for direct genre requests.").font(.caption).foregroundStyle(.secondary)
+            ComfortOptions()
             Text("PLAY YOUR WAY").font(.caption.bold()).foregroundStyle(gold)
             Toggle("Relaxed mode",isOn: $game.experience.relaxed)
             Text("Half-speed clock and customer arrivals. No score or reward penalty. The first-customer guide always pauses the clock.").font(.caption).foregroundStyle(.secondary)

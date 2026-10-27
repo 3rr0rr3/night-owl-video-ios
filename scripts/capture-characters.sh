@@ -15,7 +15,7 @@ DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d
 xcrun simctl boot "$DEVICE"
 xcrun simctl bootstatus "$DEVICE" -b
 python3 -c 'import subprocess,sys; subprocess.run(["xcrun","simctl","install",sys.argv[1],sys.argv[2]],check=True,timeout=180)' "$DEVICE" "$APP"
-for MODE in menu world covers neighborhood chores slots tutorial options styles summary story newcharacters; do
+for MODE in menu world library notebook equipment covers neighborhood chores slots tutorial options styles summary story newcharacters; do
   echo "Capturing $MODE"
   xcrun simctl launch "$DEVICE" com.nightowl.videostore "--$MODE"
   sleep 5

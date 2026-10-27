@@ -5,6 +5,9 @@ import AVFoundation
     private var effect: AVAudioPlayer?
     private var music: AVAudioPlayer?
     private var rainy = false
+    private var effectsLevel: Float = 0.45
+    private var musicLevel: Float = 0.28
+    func volumes(effects:Double,music:Double) { effectsLevel = Float(max(0,min(1,effects))); musicLevel = Float(max(0,min(1,music))); self.music?.volume = musicLevel }
     private func wave(seconds: Double, sample: (Double) -> Double) -> Data {
         let rate = 22050; let count = Int(seconds * Double(rate))
         var pcm = Data(capacity: count * 2)
@@ -34,7 +37,7 @@ import AVFoundation
             default: return sin(angle * 440.0) * envelope * 0.15
             }
         }
-        effect = try? AVAudioPlayer(data: data); effect?.volume = 0.45; effect?.play()
+        effect = try? AVAudioPlayer(data: data); effect?.volume = effectsLevel; effect?.play()
     }
     func ambience(enabled: Bool,rain: Bool) {
         guard enabled else { music?.stop(); music = nil; return }
@@ -52,7 +55,7 @@ import AVFoundation
             let noise = (Double(seed % 65536) / 32768 - 1) * (rain ? 0.07 : 0)
             return note + noise
         }
-        music = try? AVAudioPlayer(data: data); music?.numberOfLoops = -1; music?.volume = 0.28; music?.play()
+        music = try? AVAudioPlayer(data: data); music?.numberOfLoops = -1; music?.volume = musicLevel; music?.play()
     }
     func stop() { effect?.stop(); music?.stop(); music = nil }
     func validate() -> Bool {

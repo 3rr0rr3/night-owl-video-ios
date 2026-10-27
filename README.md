@@ -48,4 +48,11 @@ Store PC opens Events, friends & rare tapes, and Hands-on chores. Wipe all six p
 
 Play Options includes scanner/register/rewind sounds and an optional original eight-second retro music loop with rain texture on rainy days. Audio is synthesized locally, mixes with other audio, respects silent mode and stops in the background. Music starts disabled.
 
-The title screen has three independent save slots. The existing shop migrates into slot 1 on its next save. Switching writes the current shop first; New Game resets only the selected slot. Shop, story, preferences, friendships and collectibles are isolated per slot. Empty slots are not created until Start Game.
+The title screen has three independent save slots. The existing shop migrates into slot 1 on its next save. Switching writes the current shop first; New Game resets only the selected slot. Shop, story, preferences, friendships and collectibles are isolated per slot. Empty slots begin with fresh shop progress.
+
+## Bigger library and shop tools (2.6)
+The catalog expands to 30 original films with two mood tags and a synopsis each. Legacy stock and IDs are preserved. Cover art extends the six illustrated genre families with distinct titles, colors and star patterns. Film Browser searches titles, synopses and mood tags, filters genre/mood/in-stock copies, and handles ordering as well as recommendations.
+
+Store PC contains a customer notebook (last ten rentals per regular, favorites, friendship and current requests), four functional equipment upgrades, and optional daily surprises. A fast rewinder takes one second; a larger return bin carries up to four returns between days; a second waiting desk allows seven queued customers; wholesale ordering reduces copy costs to $10. Surprises provide clue-based missing-film/case tasks or free stock, with one reward per day. They can be disabled and never appear in Relaxed mode. Tap the illustrated shelves, return sign or register to change stations.
+
+Play Options adds larger text, independent effect/music volumes and optional haptics. Export/import in Store PC uses JSON files compatible with Files/AirDrop. Imported backups are validated before a confirmation, replace only the active slot, and retain a local pre-import copy that can be restored. Old six-film backups and existing save slots migrate automatically. Backups contain only game data.

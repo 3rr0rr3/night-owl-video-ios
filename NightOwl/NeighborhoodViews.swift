@@ -15,7 +15,7 @@ struct NeighborhoodPanel: View {
             Button("Trade one spare VHS for a rare edition") { game.tradeSpareTape() }.buttonStyle(.bordered).tint(gold).disabled(game.neighborhood.reputation < 10 || game.neighborhood.tradedDay == game.s.day || game.neighborhood.rare.count == 6)
             Text("Trading unlocks at 10 reputation and uses one stock copy, once per day.").font(.caption2).foregroundStyle(.secondary)
             LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())],spacing: 12) {
-                ForEach(game.s.movies) { movie in
+                ForEach(Array(game.s.movies.prefix(6))) { movie in
                     VStack {
                         VHSCover(movie: movie,rare: true).opacity(game.neighborhood.rare.contains(movie.id) ? 1 : 0.2)
                         Text(game.neighborhood.rare.contains(movie.id) ? "Collector’s cut · owned" : "Find through gifts, deliveries & donations").font(.caption2).multilineTextAlignment(.center)

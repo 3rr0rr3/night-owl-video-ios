@@ -27,8 +27,9 @@ struct SellingScene: View {
                         }.padding(.horizontal,16).padding(.top,7)
                         // The shopkeeper reaches across the actual counter during scanning.
                         if cue?.kind == .scan && !reduceMotion {
-                            Capsule().fill(mint).frame(width:56,height:15).rotationEffect(.degrees(-18 + progress * 18),anchor:.leading).position(x:89,y:91)
-                            Circle().fill(Color(red:0.87,green:0.66,blue:0.47)).frame(width:16,height:16).position(x:113 + progress * 28,y:88)
+                            Capsule().fill(mint).frame(width:60,height:15)
+                                .overlay(alignment:.trailing) { Circle().fill(Color(red:0.87,green:0.66,blue:0.47)).frame(width:17,height:17).offset(x:4) }
+                                .rotationEffect(.degrees(-12 + progress * 16),anchor:.leading).position(x:91,y:98)
                         }
                         Rectangle().fill(Color(red:0.35,green:0.26,blue:0.29)).frame(height:70).offset(y:105)
                         Rectangle().fill(coral).frame(height:5).offset(y:105)

@@ -11,6 +11,7 @@ for SOURCE in NightOwl/*.swift; do
 done
 xcrun swiftc "${CAPTURE_SOURCES[@]}" build/CharacterCapture.swift -o "$APP/NightOwl" -sdk "$SDK" -target "$(uname -m)-apple-ios16.0-simulator" -swift-version 5 -framework SwiftUI -framework UIKit -framework AVFoundation
 cp NightOwl/Info.plist "$APP/Info.plist"
+bash scripts/package-icon.sh "$APP" iphonesimulator
 DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for a in d["devices"].values() for x in a if x["name"].startswith("iPhone")))')
 xcrun simctl boot "$DEVICE"
 xcrun simctl bootstatus "$DEVICE" -b
@@ -31,7 +32,7 @@ sleep 2.3
 xcrun simctl io "$DEVICE" screenshot build/cash-register.png
 sleep 2.7
 xcrun simctl io "$DEVICE" screenshot build/rental-receipt.png
-sleep 7.6
+sleep 11.6
 kill -INT "$VIDEO_PID" || true
 wait "$VIDEO_PID" || true
 xcrun simctl io "$DEVICE" screenshot build/characters-in-store.png

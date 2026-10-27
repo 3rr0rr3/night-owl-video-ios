@@ -7,6 +7,7 @@ enum PlayerPalette {
 }
 
 struct PlayerPortrait: View {
+    var walkingPhase: Double? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
     var body: some View {
@@ -22,9 +23,20 @@ struct PlayerPortrait: View {
                 let hair = PlayerPalette.hair
                 let shirt = PlayerPalette.shirt
                 context.fill(oval(9,123,62,6),with:.color(.black.opacity(0.2)))
+                if let walk = walkingPhase {
+                    for leg in 0..<2 {
+                        let x = CGFloat(leg == 0 ? 28 : 51)
+                        let step = sin(walk * 13 + Double(leg) * .pi)
+                        let shift = CGFloat(step) * 6
+                        let lift = CGFloat(max(0,step)) * 3
+                        draw(polygon([CGPoint(x:x-7,y:96),CGPoint(x:x+7,y:96),CGPoint(x:x+6+shift,y:121-lift),CGPoint(x:x-6+shift,y:121-lift)]),Color(red:0.18,green:0.22,blue:0.29))
+                        draw(Path(roundedRect:CGRect(x:x-10+shift,y:119-lift,width:20,height:7),cornerRadius:2),ink)
+                    }
+                } else {
                 draw(polygon([CGPoint(x:20,y:96),CGPoint(x:60,y:96),CGPoint(x:58,y:121),CGPoint(x:44,y:121),CGPoint(x:40,y:103),CGPoint(x:36,y:121),CGPoint(x:22,y:121)]),Color(red:0.18,green:0.22,blue:0.29))
                 draw(Path(roundedRect:CGRect(x:18,y:119,width:20,height:7),cornerRadius:2),ink)
                 draw(Path(roundedRect:CGRect(x:43,y:119,width:20,height:7),cornerRadius:2),ink)
+                }
                 draw(Path(roundedRect:CGRect(x:32,y:49,width:17,height:19),cornerRadius:4),skin)
                 draw(polygon([CGPoint(x:30,y:60),CGPoint(x:17,y:64),CGPoint(x:7,y:75),CGPoint(x:11,y:89),CGPoint(x:21,y:87),CGPoint(x:20,y:100),CGPoint(x:60,y:100),CGPoint(x:59,y:87),CGPoint(x:69,y:89),CGPoint(x:74,y:75),CGPoint(x:63,y:64),CGPoint(x:50,y:60),CGPoint(x:40,y:67)]),shirt,1.7)
                 draw(Path(roundedRect:CGRect(x:11,y:86,width:10,height:20),cornerRadius:4),skin)

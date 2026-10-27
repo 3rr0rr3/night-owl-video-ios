@@ -17,7 +17,9 @@ source += r'''
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 s.s.guests = [6,7,8].map { Guest(name:Cast.all[$0].name,genre:Cast.all[$0].genre,snack:$0 == 6) }
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
-                s.recommend(2); s.scan()
+                s.recommend(2)
+                try? await Task.sleep(nanoseconds: 3_500_000_000)
+                s.scan()
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 s.payment()
                 try? await Task.sleep(nanoseconds: 3_000_000_000)

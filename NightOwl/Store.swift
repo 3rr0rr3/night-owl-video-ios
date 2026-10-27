@@ -58,6 +58,7 @@ struct Save: Codable {
     @Published var story = StoryProgress()
     @Published var speakingGuest: UUID? = nil
     @Published var rewinding: UUID? = nil
+    @Published var moviePickup: MoviePickup? = nil
     @Published var counterWalking = false
     var counterWalkToken = UUID()
     var counterPresentedID: UUID? = nil
@@ -74,7 +75,7 @@ struct Save: Codable {
         selectedSlot = min(2,max(0,UserDefaults.standard.integer(forKey: "nightowl.active-slot")))
         if let data = UserDefaults.standard.data(forKey:"nightowl.cinema"), let saved = try? JSONDecoder().decode(CinemaProgress.self,from:data) { cinema = saved }
         expandCatalog()
-
+        restorePendingPickup()
     }
     var chapter: Chapter { Storybook.chapters[min(story.chapter, Storybook.chapters.count - 1)] }
     var storyFinished: Bool { story.chapter >= Storybook.chapters.count }
@@ -146,6 +147,7 @@ struct Save: Codable {
         neighborhood = Neighborhood(); neighborhood.effects = effects; neighborhood.music = music
         let options = cinema
         cinema = CinemaProgress(); cinema.largeText = options.largeText; cinema.effectsVolume = options.effectsVolume; cinema.musicVolume = options.musicVolume; cinema.haptics = options.haptics; cinema.surprises = options.surprises
+        moviePickup = nil
         counterWalking = false; counterPresentedID = nil
         deskEvent = nil
         s = Save(); story = StoryProgress(); speakingGuest = nil; rewinding = nil; earned = 0; effectID = UUID(); change = 0; station = "COUNTER"
@@ -194,7 +196,7 @@ struct Save: Codable {
         guard s.movies.indices.contains(i), !s.guests.isEmpty, s.guests[0].movie == nil else { return }
         guard s.movies[i].stock > 0 else { say("Out of stock. Order more on the store PC."); return }
         guard s.movies[i].genre == s.guests[0].genre else { say("That's not the genre they asked for. Try another shelf."); return }
-        s.guests[0].movie = i; say("Great recommendation. Scan the VHS at the counter.")
+        s.guests[0].movie = i; moviePickup = MoviePickup(guestID:s.guests[0].id,movie:i); say("Great choice! I’ll get that tape from the back shelf.")
     }
     func scan() { guard !s.guests.isEmpty, s.guests[0].movie != nil else { say("Choose a movie from the shelves first."); return }; guard !s.guests[0].scanned else { return }; s.guests[0].scanned = true; deskCue(.scan,s.movies[s.guests[0].movie!].title); say("Rental scanned. Collect payment, then count out the change.") }
     func payment() { guard !s.guests.isEmpty, s.guests[0].scanned, !s.guests[0].paid else { return }; s.guests[0].paid = true; change = experience.autoChange ? 10 - price : 0; deskCue(.payment,"Cash drawer open",amount: 10,change: 10 - price); say("Customer handed you $10. Count $\(10 - price) change.") }
@@ -202,6 +204,7 @@ struct Save: Codable {
         guard let g = s.guests.first, let i = g.movie, g.paid else { return }
         if experience.autoChange { change = 10 - price }
         guard change == 10 - price else { say("Check your change. The total is $\(price), paid $10."); return }
+        moviePickup = nil
         remember(g,i)
         befriend(g.characterIndex); neighborhood.reputation = min(100,neighborhood.reputation + 1)
         let wasGuided = guiding

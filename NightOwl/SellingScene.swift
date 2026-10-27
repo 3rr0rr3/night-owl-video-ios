@@ -6,18 +6,22 @@ struct SellingScene: View {
     @Environment(\.scenePhase) private var phase
     var isReturn = false
     @State private var animating = false
+    @State private var pickupStage = ClerkPickupStage.waiting
+    @State private var pickupStarted = Date()
+    @State private var pickupFilm: Int? = nil
     @State private var customer: CounterCustomer? = nil
     @State private var walkStage = CustomerWalkStage.waiting
     @State private var walkStarted = Date()
     @State private var walkToken = UUID()
     private var event: DeskEvent? { guard let value = game.deskEvent, Date().timeIntervalSince(value.started) < value.duration else { return nil }; return value }
     var body: some View {
-        TimelineView(.animation(minimumInterval:1.0/30,paused:(!animating && !game.counterWalking) || reduceMotion || phase != .active)) { clock in
+        TimelineView(.animation(minimumInterval:1.0/30,paused:(!animating && !game.counterWalking && game.moviePickup == nil) || reduceMotion || phase != .active)) { clock in
             let cue = event
             let elapsed = cue.map { max(0,clock.date.timeIntervalSince($0.started)) } ?? 0
             let progress = reduceMotion ? 1 : min(1,elapsed / 0.9)
             let selling = cue?.kind == .sale
             let walkTime = max(0,clock.date.timeIntervalSince(walkStarted))
+            let pickupTime = max(0,clock.date.timeIntervalSince(pickupStarted))
             VStack(spacing:0) {
                 HStack { Label(isReturn ? "RETURN DESK" : "YOUR RENTAL COUNTER",systemImage:"person.crop.rectangle"); Spacer(); Text("$\(game.s.money)").foregroundStyle(gold) }.font(.system(size:10,weight:.black,design:.monospaced)).padding(.horizontal,12).padding(.top,10)
                 GeometryReader { geo in
@@ -27,11 +31,8 @@ struct SellingScene: View {
                         Rectangle().fill(Color(red:0.23,green:0.28,blue:0.33)).frame(height:55).offset(y:175)
                         ForEach(0..<6) { n in Rectangle().fill(.white.opacity(0.04)).frame(width:1,height:55).offset(x:CGFloat(n)*70,y:175) }
                         Text("EXIT →").font(.system(size:7,weight:.black,design:.monospaced)).foregroundStyle(mint).padding(4).background(ink,in:RoundedRectangle(cornerRadius:3)).position(x:width-24,y:57)
-                        HStack(alignment:.top) {
-                            VStack(spacing:0) { Text("YOU · SHOPKEEPER").font(.system(size:8,weight:.heavy)).foregroundStyle(mint); PlayerPortrait().offset(y:2) }
-                            Spacer()
-
-                        }.padding(.horizontal,16).padding(.top,7)
+                        stockShelf(width:width)
+                        retrievingClerk(width:width,time:pickupTime)
                         // The shopkeeper reaches across the actual counter during scanning.
                         if cue?.kind == .scan && !reduceMotion {
                             Capsule().fill(PlayerPalette.shirt).frame(width:60,height:15)
@@ -53,6 +54,9 @@ struct SellingScene: View {
                                 VHSCover(movie:game.s.movies[id]).frame(width:32,height:42).rotationEffect(.degrees(8)).position(x:width * (reduceMotion ? 0.88 : 0.72 + progress * 0.16),y:118)
                             }
                         }
+                        if !isReturn, game.moviePickup == nil, let guest = game.s.guests.first, let movie = guest.movie, !guest.scanned, game.s.movies.indices.contains(movie) {
+                            VHSCover(movie:game.s.movies[movie]).frame(width:24,height:32).rotationEffect(.degrees(-8)).position(x:width * 0.30,y:123)
+                        }
                         if !isReturn, let customer {
                             walkingCustomer(customer,time:walkTime)
                                 .position(x:reduceMotion ? width * 0.83 : CGFloat(CustomerWalking.position(stage:walkStage,elapsed:walkTime,width:Double(width))),y:135)
@@ -67,6 +71,7 @@ struct SellingScene: View {
         }.frame(height:288)
         .task(id:"\(game.s.guests.first?.id.uuidString ?? "empty")-\(isReturn)") { await moveQueue() }
         .onDisappear { if game.counterWalkToken == walkToken { game.counterWalking = false; game.counterWalkToken = UUID() } }
+        .task(id:"pickup-\(game.moviePickup?.id.uuidString ?? "none")-\(isReturn)") { await collectMovie() }
         .onChange(of:game.deskEvent?.id) { _ in animating = true }
         .task(id:game.deskEvent?.id) {
             guard let event = game.deskEvent else { return }
@@ -76,6 +81,46 @@ struct SellingScene: View {
             if !Task.isCancelled { animating = false }
         }
         .accessibilityElement(children:.ignore).accessibilityLabel("Your shopkeeper at the \(isReturn ? "return desk" : "rental counter"). \(status(event))")
+    }
+    @MainActor private func collectMovie() async {
+        guard !isReturn, let request = game.moviePickup else { return }
+        defer { pickupStage = .waiting; pickupFilm = nil }
+        guard request.guestID == game.s.guests.first?.id, request.movie == game.s.guests.first?.movie else { game.finishPickup(request); return }
+        if reduceMotion { game.finishPickup(request); return }
+        pickupFilm = request.movie
+        pickupStage = .toShelf; pickupStarted = Date()
+        try? await Task.sleep(nanoseconds:UInt64(ClerkPickupMotion.walkDuration * 1_000_000_000))
+        guard !Task.isCancelled else { return }
+        pickupStage = .collecting; pickupStarted = Date()
+        try? await Task.sleep(nanoseconds:UInt64(ClerkPickupMotion.collectDuration * 1_000_000_000))
+        guard !Task.isCancelled else { return }
+        pickupStage = .returning; pickupStarted = Date()
+        try? await Task.sleep(nanoseconds:UInt64(ClerkPickupMotion.walkDuration * 1_000_000_000))
+        guard !Task.isCancelled else { return }
+        pickupStage = .waiting; pickupFilm = nil
+        game.finishPickup(request)
+    }
+    private func stockShelf(width:CGFloat) -> some View {
+        VStack(spacing:3) {
+            Text("BACK STOCK").font(.system(size:6,weight:.black,design:.monospaced)).foregroundStyle(gold)
+            HStack(spacing:2) { ForEach(0..<6) { n in Rectangle().fill(palette[n]).frame(width:8,height:24) } }.padding(4).background(ink)
+        }.frame(width:80,height:44).position(x:width * 0.43,y:34)
+    }
+    private func retrievingClerk(width:CGFloat,time:Double) -> some View {
+        let depth = reduceMotion ? 0 : ClerkPickupMotion.depth(stage:pickupStage,time:time)
+        let walking = !reduceMotion && (pickupStage == .toShelf || pickupStage == .returning)
+        let scale = 1 - depth * 0.40
+        return VStack(spacing:0) {
+            Text("YOU · SHOPKEEPER").font(.system(size:8,weight:.heavy)).foregroundStyle(mint)
+            PlayerPortrait(walkingPhase:walking ? time : nil)
+                .overlay(alignment:.trailing) {
+                    if pickupStage == .returning, let id = pickupFilm, game.s.movies.indices.contains(id) {
+                        VHSCover(movie:game.s.movies[id]).frame(width:23,height:31).rotationEffect(.degrees(-10)).offset(x:-3,y:20)
+                    }
+                }
+        }.frame(width:80,height:145).scaleEffect(scale)
+            .rotationEffect(.degrees(walking ? sin(time * 13) * 1.2 : 0))
+            .position(x:56 + (width * 0.43 - 56) * depth,y:82 - depth * 24 - (walking ? abs(sin(time * 13)) * 1.5 : 0))
     }
     @MainActor private func moveQueue() async {
         guard !isReturn else { game.counterWalking = false; return }
@@ -119,6 +164,9 @@ struct SellingScene: View {
         }.frame(width:80,height:150)
     }
     private func status(_ cue:DeskEvent?) -> String {
+        if !isReturn, let request = game.moviePickup, game.s.movies.indices.contains(request.movie) {
+            return pickupStage == .returning ? "Bringing \(game.s.movies[request.movie].title) to the counter…" : "Getting \(game.s.movies[request.movie].title) from the back shelf…"
+        }
         if !isReturn && walkStage == .arriving { return "\(customer?.name ?? "Customer") is walking to the counter…" }
         if !isReturn && walkStage == .leaving { return "\(customer?.name ?? "Customer") is leaving · next customer shortly" }
         guard let cue else { return isReturn ? "Scan and process returned tapes below" : (game.s.guests.isEmpty ? "Ready for the next customer" : "Serving \(game.s.guests[0].name) · use the controls below") }

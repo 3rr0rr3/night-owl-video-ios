@@ -97,10 +97,12 @@ extension Store {
         guard (0..<3).contains(slot), slot != selectedSlot else { return }
         if hasSavedGame { save() }
         selectedSlot = slot; UserDefaults.standard.set(slot,forKey: "nightowl.active-slot")
+        moviePickup = nil
         counterWalking = false; counterPresentedID = nil
         deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; station = "COUNTER"
         if let saved = slotInfo(slot) {
             s = saved.shop; story = saved.story; experience = saved.experience; neighborhood = saved.neighborhood; cinema = saved.cinema ?? CinemaProgress(); expandCatalog()
+            restorePendingPickup()
             say("Shop \(slot + 1) loaded. Welcome back to Night Owl.")
         } else {
             s = Save(); story = StoryProgress(); experience = Experience(); neighborhood = Neighborhood(); cinema = CinemaProgress(); expandCatalog()

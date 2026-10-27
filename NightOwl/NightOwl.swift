@@ -242,7 +242,7 @@ struct GameView: View {
                         }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
                     }
                 }
-                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
+                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking || game.moviePickup != nil); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)

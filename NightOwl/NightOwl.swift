@@ -180,7 +180,7 @@ struct ShopArt: View {
                         }; Spacer() }.padding(.leading, 15).offset(y: 2).animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.8), value: game.s.guests.map { $0.id })
                     }
                 }
-                VStack { Spacer(); HStack { Button("▰ RETURNS \(game.s.returns.count)") { game.station = "RETURNS" }.frame(minHeight:44); Spacer(); Button("◉ REGISTER") { game.station = "COUNTER" }.frame(minHeight:44) }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
+                VStack { Spacer(); HStack { Button("▰ RETURNS \(game.s.returns.count)") { game.station = "RETURNS" }.frame(minHeight:44); Spacer(); Button("◉ REGISTER") { game.station = "COUNTER" }.frame(minHeight:44) }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(.horizontal,12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
                 if game.s.decor > 0 { Image(systemName: game.storyFinished ? "star.circle.fill" : "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
             }
         }.frame(height: 275).clipShape(RoundedRectangle(cornerRadius: 18))

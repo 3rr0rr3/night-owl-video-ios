@@ -21,6 +21,7 @@ jobs:
         with:
           name: NightOwl-character-screenshots
           path: |
+            build/portrait.png
             build/library.png
             build/notebook.png
             build/equipment.png

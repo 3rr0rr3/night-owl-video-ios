@@ -34,7 +34,14 @@ source += r'''
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--library") {
+            if ProcessInfo.processInfo.arguments.contains("--portrait") {
+                VStack(spacing:24) {
+                    Text("YOUR NIGHT OWL SHOPKEEPER").font(.system(size:20,weight:.black,design:.rounded)).foregroundStyle(mint)
+                    PlayerPortrait().scaleEffect(2.8).frame(width:240,height:365)
+                    Text("Swept dark hair · rectangular glasses\nShort beard · blue crew-neck tee").font(.subheadline).multilineTextAlignment(.center).foregroundStyle(.white.opacity(0.8))
+                    Text("ORIGINAL IN-GAME CHARACTER ART").font(.system(size:10,weight:.bold,design:.monospaced)).foregroundStyle(gold)
+                }.padding(20).frame(maxWidth:.infinity,maxHeight:.infinity).background(ink).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--library") {
                 NavigationStack { ScrollView { FilmBrowser().padding(20) }.background(ink).navigationTitle("Film library") }.environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--notebook") {
                 NavigationStack { ScrollView { CustomerNotebook().padding(20) }.background(ink).navigationTitle("Notebook") }.environmentObject(store).preferredColorScheme(.dark)

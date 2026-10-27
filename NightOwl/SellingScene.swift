@@ -21,14 +21,14 @@ struct SellingScene: View {
                     ZStack(alignment:.topLeading) {
                         Rectangle().fill(Color(red:0.19,green:0.21,blue:0.31)).frame(height:112)
                         HStack(alignment:.top) {
-                            VStack(spacing:0) { Text("YOU · SHOPKEEPER").font(.system(size:8,weight:.heavy)).foregroundStyle(mint); Cutout(index:0).offset(y:2) }
+                            VStack(spacing:0) { Text("YOU · SHOPKEEPER").font(.system(size:8,weight:.heavy)).foregroundStyle(mint); PlayerPortrait().offset(y:2) }
                             Spacer()
                             if !isReturn, let guest { VStack(spacing:0) { Text(selling ? "THANK YOU!" : (game.s.guests.first?.name.uppercased() ?? "CUSTOMER")).font(.system(size:8,weight:.heavy)).foregroundStyle(gold); Cutout(index:guest).offset(y:2) } }
                         }.padding(.horizontal,16).padding(.top,7)
                         // The shopkeeper reaches across the actual counter during scanning.
                         if cue?.kind == .scan && !reduceMotion {
-                            Capsule().fill(mint).frame(width:60,height:15)
-                                .overlay(alignment:.trailing) { Circle().fill(Color(red:0.87,green:0.66,blue:0.47)).frame(width:17,height:17).offset(x:4) }
+                            Capsule().fill(PlayerPalette.shirt).frame(width:60,height:15)
+                                .overlay(alignment:.trailing) { Circle().fill(PlayerPalette.skin).frame(width:17,height:17).offset(x:4) }
                                 .rotationEffect(.degrees(-12 + progress * 16),anchor:.leading).position(x:91,y:98)
                         }
                         Rectangle().fill(Color(red:0.35,green:0.26,blue:0.29)).frame(height:70).offset(y:105)

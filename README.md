@@ -61,3 +61,6 @@ Play Options adds larger text, independent effect/music volumes and optional hap
 The rental counter now keeps an adult shopkeeper marked YOU and the customer visible in a stationary counter scene above the scrolling controls. VHS scans move the tape over a physical scanner, payment travels from the customer to the cash drawer, and sales hand over the tape/change while a narrow receipt feeds from the register. The served customer and movie stay attached to the transaction until its animation finishes, even after the queue advances. The return desk uses the same shopkeeper scene.
 
 Floating scan/payment/receipt cards have been removed from the game. Reduce Motion uses static transaction poses and feedback. The counter stays visible while choosing scan/payment/change actions below it. Existing sound/haptic preferences and all save data remain.
+
+## Personalized shopkeeper portrait (2.8)
+The playable shopkeeper now has a dedicated illustrated portrait with swept dark hair, close-cropped sides, black rectangular glasses, a short full beard and a blue crew-neck T-shirt. The scan animation shares its shirt and skin palette. Customer portraits remain separate. The character retains blinking, gentle breathing and Reduce Motion behavior. The capture workflow includes a full-size portrait preview.

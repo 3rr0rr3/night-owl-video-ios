@@ -38,3 +38,14 @@ Customize your shop in Store PC: nine poster, shelf and counter styles unlock th
 Successful rental and return scans show a VHS barcode, a sweeping red scanner beam and an accepted checkmark. Taking payment opens the illustrated cash drawer and slides in a $10 note. Completed rentals send out change coins and print a receipt; collected return fees also animate the register. Feedback floats above the current screen so it remains visible while scrolling and does not block buttons.
 
 Reduce Motion uses a static success card. Animation timers expire after backgrounding, and effects are not saved or replayed by Continue. Repeated scans/payments, rejected change and already-collected fees do not retrigger success effects. Tests cover event amounts, action guards and save safety.
+
+## Neighborhood expansion (2.5)
+All six VHS films now have original procedural cover illustrations, titles, taglines, collector borders and mini covers in the store shelves. Customer mood requests have genre hints and an optional direct-request toggle.
+
+Chat once per regular per day and complete rentals to grow friendships. Three friendship points earns a rare tape gift; the collection also grows through a daily donation box, stock trades (10 reputation) and bonus deliveries (25 reputation, every third order). Four rotating daily events spotlight genres and reward completed rental goals once per day. Reputation increases with successful rentals, case repairs and events, attracting more visitors.
+
+Store PC opens Events, friends & rare tapes, and Hands-on chores. Wipe all six patches to clean a spill, drag a fully processed returned VHS onto its shelf, and press three repair points after inspecting a damaged case. Tap controls remain available for cleaning and shelving. Repairs never undo collected fees.
+
+Play Options includes scanner/register/rewind sounds and an optional original eight-second retro music loop with rain texture on rainy days. Audio is synthesized locally, mixes with other audio, respects silent mode and stops in the background. Music starts disabled.
+
+The title screen has three independent save slots. The existing shop migrates into slot 1 on its next save. Switching writes the current shop first; New Game resets only the selected slot. Shop, story, preferences, friendships and collectibles are isolated per slot. Empty slots are not created until Start Game.

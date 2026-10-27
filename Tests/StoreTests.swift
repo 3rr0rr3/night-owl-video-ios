@@ -2,6 +2,7 @@ import Foundation
 
 @main struct StoreTests {
     @MainActor static func main() async {
+        for key in ["nightowl.neighborhood","nightowl.active-slot","nightowl.slot.0","nightowl.slot.1","nightowl.slot.2"] { UserDefaults.standard.removeObject(forKey: key) }
         UserDefaults.standard.removeObject(forKey: "nightowl.experience")
         UserDefaults.standard.removeObject(forKey: "nightowl.save")
         UserDefaults.standard.removeObject(forKey: "nightowl.story")
@@ -167,6 +168,37 @@ import Foundation
         guided.newGame(); assert(guided.guiding && guided.experience.autoChange && guided.experience.poster == "poster-owl" && guided.experience.report == nil)
         guided.skipTutorial(); assert(!guided.guiding)
         print("PASS: guided rental steps, clock pause, badges, automatic change, relaxed clock, style locks and purchases, report accounting, migration and persistence")
+        let town = Store(); town.newGame(); town.skipTutorial()
+        town.s.guests = [Guest(name: Cast.all[0].name,genre: Cast.all[0].genre)]
+        town.talk(); let firstBond = town.bond(0); town.talk(); assert(town.bond(0) == firstBond, "Chat reward once per regular per day")
+        town.befriend(0); town.befriend(0); town.befriend(0)
+        assert(town.bond(0) == 4 && town.neighborhood.gifts == [0] && town.neighborhood.rare == [0])
+        town.donationBox(); let collected = town.neighborhood.rare.count; town.donationBox(); assert(town.neighborhood.rare.count == collected)
+        town.neighborhood.reputation = 10; let spareCopies = town.s.movies.map { $0.stock }.reduce(0,+)
+        town.tradeSpareTape(); town.tradeSpareTape()
+        assert(town.s.movies.map { $0.stock }.reduce(0,+) == spareCopies - 1 && town.neighborhood.rare.count == collected + 1)
+        town.experience.customers = town.todayEvent.target
+        let eventCash = town.s.money; town.completeEvent(); town.completeEvent()
+        assert(town.s.money == eventCash + 15 && town.neighborhood.eventClaimedDay == town.s.day)
+        town.s.day = 2; assert(town.todayEvent.genre == "SCI-FI")
+        town.s.day = 3; assert(town.todayEvent.title == "Rainy-day rush")
+        let moodGuest = Guest(name: "Test",genre: "HORROR"); assert(town.request(moodGuest).contains("spooky"))
+        town.neighborhood.moods = false; assert(town.request(moodGuest).contains("horror"))
+        town.s.returns = [Tape(movie: 0,damaged: true)]
+        let caseID = town.s.returns[0].id; town.repairCase(caseID); assert(town.s.returns[0].damaged)
+        town.process("scan"); town.process("fee"); let cashAfterFee = town.s.money
+        town.repairCase(caseID); let repairXP = town.s.xp; town.repairCase(caseID)
+        assert(!town.s.returns[0].damaged && town.s.money == cashAfterFee && town.s.xp == repairXP)
+        town.neighborhood.reputation = 25; town.story.orders = 2
+        let deliveryStock = town.s.movies[2].stock; town.buy(2); assert(town.s.movies[2].stock == deliveryStock + 2 && town.neighborhood.rare.contains(2))
+        town.s.money = 777; town.neighborhood.music = true; town.save()
+        town.switchSlot(1); assert(!town.hasSavedGame && town.slotInfo(0)?.shop.money == 777)
+        town.newGame(); town.s.money = 222; town.save(); town.switchSlot(0)
+        assert(town.s.money == 777 && town.neighborhood.music && town.neighborhood.rare.count >= 3)
+        town.switchSlot(1); assert(town.s.money == 222)
+        town.switchSlot(2); assert(!town.hasSavedGame)
+        town.switchSlot(0); assert(town.s.money == 777)
+        print("PASS: friendships, gifts, repeat-chat guards, donations, trades, event rewards, mood hints, repairs, reputation deliveries and independent save slots")
         migrated.newGame()
         assert(migrated.deskEvent == nil)
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)

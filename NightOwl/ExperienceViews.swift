@@ -23,12 +23,17 @@ struct PlayOptions: View {
     @EnvironmentObject var game: Store
     var body: some View {
         VStack(alignment: .leading,spacing: 14) {
+            Toggle("Sound effects",isOn: $game.neighborhood.effects)
+            Toggle("Retro music & rainy-day ambience",isOn: $game.neighborhood.music)
+            Text("Original synthesized music and effects. Respects silent mode and pauses in the background.").font(.caption).foregroundStyle(.secondary)
+            Toggle("Mood-based customer requests",isOn: $game.neighborhood.moods)
+            Text("Keep genre labels visible on Shelves, or turn this off for direct genre requests.").font(.caption).foregroundStyle(.secondary)
             Text("PLAY YOUR WAY").font(.caption.bold()).foregroundStyle(gold)
             Toggle("Relaxed mode",isOn: $game.experience.relaxed)
             Text("Half-speed clock and customer arrivals. No score or reward penalty. The first-customer guide always pauses the clock.").font(.caption).foregroundStyle(.secondary)
             Toggle("Automatic change",isOn: $game.experience.autoChange)
             Text("Counts the correct change for you. You still confirm every rental.").font(.caption).foregroundStyle(.secondary)
-        }.tint(mint).onChange(of: game.experience.relaxed) { _ in game.save() }.onChange(of: game.experience.autoChange) { _ in game.save() }
+        }.tint(mint).onChange(of: game.neighborhood.effects) { _ in game.save() }.onChange(of: game.neighborhood.music) { _ in game.save() }.onChange(of: game.neighborhood.moods) { _ in game.save() }.onChange(of: game.experience.relaxed) { _ in game.save() }.onChange(of: game.experience.autoChange) { _ in game.save() }
     }
 }
 struct StyleShop: View {

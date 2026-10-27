@@ -189,7 +189,7 @@ struct ShopArt: View {
         VStack(spacing: 5) {
             Text(title).font(.system(size: 8, weight: .black)).foregroundStyle(gold)
             ForEach(0..<2) { row in
-                HStack(spacing: 3) { ForEach(0..<6) { n in Rectangle().fill(palette[(start + row + n) % 6]).frame(height: 34).overlay(alignment: .bottom) { Rectangle().fill(ink.opacity(0.65)).frame(height: 9) } } }.padding(.horizontal, 5).padding(.bottom, 4).background(game.experience.shelf == "shelf-mint" ? mint.opacity(0.6) : (game.experience.shelf == "shelf-walnut" ? Color.brown : ink))
+                HStack(spacing: 3) { ForEach(0..<3) { n in VHSCover(movie: game.s.movies[(start + row * 3 + n) % 6]).frame(height: 43) } }.padding(.horizontal, 5).padding(.bottom, 4).background(game.experience.shelf == "shelf-mint" ? mint.opacity(0.6) : (game.experience.shelf == "shelf-walnut" ? Color.brown : ink))
             }
         }
     }
@@ -213,6 +213,7 @@ struct GameView: View {
                     if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
                 HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
+                Text("\(game.todayEvent.title.uppercased()) · \(game.reputationName)").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
                 NextTaskCard { withAnimation { proxy.scrollTo("station-actions",anchor: .top) } }
                 Button { withAnimation { game.station = "STORY" } } label: {
                     HStack { Image(systemName: game.storyFinished ? "star.fill" : "book.closed.fill"); Text(game.storyFinished ? "MAPLE STREET MOVIE NIGHT · SAVED" : "STORY \(game.story.chapter + 1)/7 · \(game.chapter.title)").font(.system(size: 11, weight: .bold)); Spacer(); Image(systemName: "chevron.right") }.foregroundStyle(gold)
@@ -246,9 +247,9 @@ struct GameView: View {
         VStack(alignment: .leading, spacing: 12) {
             title("THE RENTAL COUNTER", "\(game.s.guests.count) in line")
             if let g = game.s.guests.first {
-                HStack { Cutout(index: g.characterIndex, speaking: game.speakingGuest == g.id).id(g.id).transition(.opacity); VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“Got any \(g.genre.lowercased()) movies?”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
+                HStack { Cutout(index: g.characterIndex, speaking: game.speakingGuest == g.id).id(g.id).transition(.opacity); VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“\(game.request(g))”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
                 action("Talk to \(g.name)", "bubble.left.and.bubble.right", color: gold) { game.talk() }
-                if let i = g.movie { Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
+                if let i = g.movie { VHSCover(movie: game.s.movies[i]).frame(width: 95); Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
                 if g.movie == nil {
                     action("Choose a movie", "rectangle.stack") { game.station = "SHELVES" }
                     action("Reserve a title", "bookmark", color: gold, enabled: !game.guiding) { game.reserve() }
@@ -267,8 +268,10 @@ struct GameView: View {
         VStack(alignment: .leading, spacing: 12) {
             title("RETURN BIN", "\(game.s.returns.count) tapes")
             if let t = game.s.returns.first {
+                VHSCover(movie: game.s.movies[t.movie]).frame(width: 110)
                 Text(game.s.movies[t.movie].title).font(.title3.bold()).foregroundStyle(gold)
                 Text("\(t.late ? "LATE · $2" : "ON TIME")   /   \(t.damaged ? "DAMAGED · $5" : "GOOD CONDITION")").font(.caption.bold()).foregroundStyle(coral)
+                ChoreBench()
                 RewindDeck(active: game.rewinding != nil)
                 action(t.scanned ? "Checked in ✓" : "1. Scan return", "barcode", enabled: !t.scanned) { game.process("scan") }
                 action(t.assessed ? "Fees reviewed ✓" : "2. Inspect & collect fees", "magnifyingglass", enabled: t.scanned && !t.assessed) { game.process("fee") }
@@ -287,7 +290,7 @@ struct GameView: View {
                 ForEach(game.s.movies) { m in
                     Button { game.recommend(m.id); if game.s.guests.first?.movie != nil { game.station = "COUNTER" } } label: {
                         VStack(alignment: .leading, spacing: 7) {
-                            ZStack { palette[m.id].opacity(0.18); VStack(spacing: 5) { Image(systemName: ["moon.stars", "eye", "face.smiling", "bolt", "heart", "magnifyingglass"][m.id]).font(.system(size: 29)); Text(m.title.uppercased()).font(.system(size: 16, weight: .black, design: .rounded)).multilineTextAlignment(.center) }.padding(12).foregroundStyle(palette[m.id]) }.frame(height: 115).clipShape(RoundedRectangle(cornerRadius: 7))
+                            VHSCover(movie: m).frame(height: 180).frame(maxWidth: .infinity)
                             Text(m.genre).font(.system(size: 9, weight: .heavy)).foregroundStyle(palette[m.id]); Text("\(m.stock) on shelf · $4 rental").font(.caption2).foregroundStyle(.secondary)
                         }.padding(9).background(.white.opacity(0.04)).clipShape(RoundedRectangle(cornerRadius: 12))
                     }.buttonStyle(.plain)
@@ -300,6 +303,8 @@ struct GameView: View {
     var pc: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("STORE MANAGEMENT", "OWL-OS 94")
+            DisclosureGroup("Events, friends & rare tapes") { NeighborhoodPanel().padding(.top,12) }.tint(mint)
+            DisclosureGroup("Hands-on chores") { ChoreBench().padding(.top,12) }.tint(mint)
             Text("DAILY TASKS").font(.caption.bold()).foregroundStyle(gold)
             Text("Rent movies • Recommend genres • Make change\nScan returns • Collect fees • Rewind & shelve\nTake reservations • Serve popcorn • Order stock").font(.caption).foregroundStyle(.secondary).lineSpacing(5)
             action("Clean store · \(game.s.dirt) spills", "sparkles", color: gold) { game.clean() }

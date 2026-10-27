@@ -5,6 +5,7 @@ struct StartGameView: View {
     @State private var playing = false
     @State private var showHelp = false
     @State private var showOptions = false
+    @State private var showSlots = false
     @State private var confirmNewGame = false
     var body: some View {
         ZStack {
@@ -25,6 +26,7 @@ struct StartGameView: View {
                     } else {
                         menuButton("Start Game",icon: "play.fill",primary: true) { game.newGame(); playing = true }
                     }
+                    menuButton("Save Slots · Shop \(game.selectedSlot + 1)",icon: "externaldrive") { showSlots = true }
                     menuButton("Play Options",icon: "slider.horizontal.3") { showOptions = true }
                     menuButton("How to Play",icon: "questionmark.circle") { showHelp = true }
                 }.frame(maxWidth: 390)
@@ -39,6 +41,7 @@ struct StartGameView: View {
             Text("Open Story to follow the seven-chapter Maple Street story and meet your twelve adult regulars. Your shop autosaves while you play. Returning to the start screen pauses the shift.")
             Text("Tap Menu to save and pause. New Game asks before replacing an existing save.").foregroundStyle(.secondary)
         }.padding(24) }.background(ink).navigationTitle("How to Play").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showHelp = false } } } } }
+        .sheet(isPresented: $showSlots) { SaveSlotsView().environmentObject(game) }
         .sheet(isPresented: $showOptions) { NavigationStack { ScrollView { PlayOptions().padding(24) }.background(ink).navigationTitle("Play Options").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showOptions = false } } } } }
         .alert("Start a new shop?",isPresented: $confirmNewGame) { Button("Cancel",role: .cancel) {} ; Button("Start New Game",role: .destructive) { game.newGame(); playing = true } } message: { Text("This replaces your current shop and story progress. Continue keeps your existing save.") }
         .onAppear {
@@ -54,6 +57,7 @@ struct FlatGameScreen: View {
     @EnvironmentObject var game: Store
     @Environment(\.scenePhase) private var phase
     let onMenu: () -> Void
+    private func syncAudio() { if phase == .active { ShopAudio.shared.ambience(enabled: game.neighborhood.music,rain: game.s.day % 3 == 0) } else { ShopAudio.shared.stop() } }
     private let timer = Timer.publish(every: 2,on: .main,in: .common).autoconnect()
     var body: some View {
         NavigationStack {
@@ -61,8 +65,14 @@ struct FlatGameScreen: View {
                 .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Menu") { game.save(); onMenu() }.accessibilityLabel("Save and pause game") } }
                 .navigationBarTitleDisplayMode(.inline)
         }
+        .onAppear { syncAudio(); if ProcessInfo.processInfo.arguments.contains("--smoke-store") { precondition(ShopAudio.shared.validate(),"Generated audio must be playable"); print("PASS: original synthesized WAV is playable") } }
+        .onDisappear { ShopAudio.shared.stop() }
+        .onChange(of: game.deskEvent?.id) { _ in if game.neighborhood.effects, let event = game.deskEvent { ShopAudio.shared.cue(event.kind == .scan ? "scan" : "cash") } }
+        .onChange(of: game.rewinding) { value in if value != nil && game.neighborhood.effects { ShopAudio.shared.cue("rewind") } }
+        .onChange(of: game.neighborhood.music) { _ in syncAudio() }
+        .onChange(of: game.s.day) { _ in syncAudio() }
         .onReceive(timer) { _ in if phase == .active { game.tick() } }
-        .onChange(of: phase) { _ in game.save() }
+        .onChange(of: phase) { _ in game.save(); syncAudio() }
         .onDisappear { game.save() }
     }
 }

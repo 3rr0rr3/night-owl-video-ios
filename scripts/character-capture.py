@@ -27,11 +27,21 @@ source += r'''
         if ProcessInfo.processInfo.arguments.contains("--tutorial") { s.experience.tutorialDone = false; s.s.guests = []; s.s.open = false }
         if ProcessInfo.processInfo.arguments.contains("--styles") { s.s.served = 10; s.s.money = 200; for id in ["poster-space","shelf-walnut","counter-gold"] { s.selectStyle(ShopStyle.all.first { $0.id == id }!) } }
         if ProcessInfo.processInfo.arguments.contains("--summary") { s.experience.report = DayReport(day: 1,revenue: 47,bonus: 30,purchases: 12,bills: 15,customers: 8,returns: 4,grant: 0,tomorrow: "Day 2: 8 returns expected. Check stock, process returns, and continue your Story goals.") }
+        s.neighborhood = Neighborhood()
+        if ProcessInfo.processInfo.arguments.contains("--neighborhood") { s.neighborhood.rare = [0,1,3]; s.neighborhood.reputation = 30; s.neighborhood.friendship = ["0":3,"6":6] }
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--options") {
+            if ProcessInfo.processInfo.arguments.contains("--covers") {
+                ScrollView { VStack(spacing: 14) { Text("NIGHT OWL · VHS COLLECTION").font(.headline).foregroundStyle(mint); LazyVGrid(columns: [GridItem(.flexible()),GridItem(.flexible())],spacing: 12) { ForEach(store.s.movies) { movie in VHSCover(movie: movie).frame(height: 205) } } }.padding(20) }.background(ink).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--neighborhood") {
+                NavigationStack { ScrollView { NeighborhoodPanel().padding(20) }.background(ink).navigationTitle("Maple Street") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--chores") {
+                NavigationStack { ScrollView { ChoreBench().padding(20) }.background(ink).navigationTitle("Hands-on chores") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--slots") {
+                SaveSlotsView().environmentObject(store)
+            } else if ProcessInfo.processInfo.arguments.contains("--options") {
                 NavigationStack { ScrollView { PlayOptions().padding(24) }.background(ink).navigationTitle("Play Options") }.environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--styles") {
                 NavigationStack { ScrollView { VStack(spacing: 20) { ShopArt(); StyleShop() }.padding(20) }.background(ink).navigationTitle("Your shop") }.environmentObject(store).preferredColorScheme(.dark)

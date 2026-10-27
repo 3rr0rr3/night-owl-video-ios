@@ -1,0 +1,53 @@
+name: Inspect personalized shopkeeper
+on:
+  push:
+    paths: [.github/workflows/inspect-player.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: macos-15
+    steps:
+      - name: Wait for app and portrait capture
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for RUN in 40524452597 40524452743; do
+            READY=0
+            for N in {1..75}; do
+              STATE=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq '.status+" "+(.conclusion//"")' 2>/dev/null || true)
+              if [ "$STATE" = "completed success" ]; then READY=1; break; fi
+              case "$STATE" in "completed failure"|"completed cancelled") exit 1;; esac
+              sleep 15
+            done
+            test "$READY" = 1
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40524452743
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40524452597
+          github-token: ${{ github.token }}
+      - name: Verify package and inspect portrait
+        run: |
+          sips -Z 900 previews/portrait.png --out previews/portrait-small.png >/dev/null
+          sips -Z 800 previews/world.png --out previews/world-small.png >/dev/null
+          python3 - <<'PY'
+          import zipfile,pathlib,plistlib,struct,base64
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          b=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',b)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='2.8'
+          print('PASS: valid arm64 IPA version 2.8')
+          for name in ['portrait','world']:
+              print(name.upper()+'_PNG:'+base64.b64encode(pathlib.Path('previews/'+name+'-small.png').read_bytes()).decode())
+          PY

@@ -18,13 +18,20 @@ import AVFoundation
     func cue(_ name: String) {
         try? AVAudioSession.sharedInstance().setCategory(.ambient,options: .mixWithOthers)
         let duration = name == "rewind" ? 0.65 : 0.3
-        let data = wave(seconds: duration) { t in
-            let envelope = max(0,1 - t / duration)
+        let data = wave(seconds: duration) { (t: Double) -> Double in
+            let envelope: Double = max(0.0,1.0 - t / duration)
+            let angle: Double = t * 2.0 * Double.pi
             switch name {
-            case "scan": return sin(t * 2 * .pi * 1480) * envelope * 0.3
-            case "cash": return (sin(t * 2 * .pi * 880) + sin(t * 2 * .pi * 1320)) * envelope * 0.2
-            case "rewind": return sin(t * 2 * .pi * (160 + t * 100)) * sin(t * 80) * envelope * 0.2
-            default: return sin(t * 2 * .pi * 440) * envelope * 0.15
+            case "scan": return sin(angle * 1480.0) * envelope * 0.3
+            case "cash":
+                let low = sin(angle * 880.0)
+                let high = sin(angle * 1320.0)
+                return (low + high) * envelope * 0.2
+            case "rewind":
+                let motor = sin(angle * (160.0 + t * 100.0))
+                let wobble = sin(t * 80.0)
+                return motor * wobble * envelope * 0.2
+            default: return sin(angle * 440.0) * envelope * 0.15
             }
         }
         effect = try? AVAudioPlayer(data: data); effect?.volume = 0.45; effect?.play()
@@ -36,10 +43,11 @@ import AVFoundation
         try? AVAudioSession.sharedInstance().setCategory(.ambient,options: .mixWithOthers)
         let melody: [Double] = [261.63,329.63,392,523.25,440,392,329.63,293.66,261.63,392,440,523.25,493.88,392,329.63,293.66]
         var seed: UInt32 = 34191
-        let data = wave(seconds: 8) { t in
+        let data = wave(seconds: 8) { (t: Double) -> Double in
             let phase = t.truncatingRemainder(dividingBy: 0.5)
             let frequency = melody[min(15,Int(t * 2))]
-            let note = sin(2 * .pi * frequency * phase) * exp(-phase * 8) * 0.16
+            let angle: Double = 2.0 * Double.pi * frequency * phase
+            let note: Double = sin(angle) * exp(-phase * 8.0) * 0.16
             seed = 1664525 &* seed &+ 1013904223
             let noise = (Double(seed % 65536) / 32768 - 1) * (rain ? 0.07 : 0)
             return note + noise

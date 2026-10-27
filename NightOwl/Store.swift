@@ -58,6 +58,9 @@ struct Save: Codable {
     @Published var story = StoryProgress()
     @Published var speakingGuest: UUID? = nil
     @Published var rewinding: UUID? = nil
+    @Published var counterWalking = false
+    var counterWalkToken = UUID()
+    var counterPresentedID: UUID? = nil
     @Published var deskEvent: DeskEvent? = nil
     @Published var earned = 0
     @Published var effectID = UUID()
@@ -143,6 +146,7 @@ struct Save: Codable {
         neighborhood = Neighborhood(); neighborhood.effects = effects; neighborhood.music = music
         let options = cinema
         cinema = CinemaProgress(); cinema.largeText = options.largeText; cinema.effectsVolume = options.effectsVolume; cinema.musicVolume = options.musicVolume; cinema.haptics = options.haptics; cinema.surprises = options.surprises
+        counterWalking = false; counterPresentedID = nil
         deskEvent = nil
         s = Save(); story = StoryProgress(); speakingGuest = nil; rewinding = nil; earned = 0; effectID = UUID(); change = 0; station = "COUNTER"
         expandCatalog()

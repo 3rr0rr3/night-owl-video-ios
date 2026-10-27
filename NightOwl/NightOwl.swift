@@ -13,6 +13,7 @@ let palette: [Color] = [mint, coral, gold, .cyan, .pink, .purple]
 struct Cutout: View {
     var index: Int
     var speaking = false
+    var walkingPhase: Double? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
@@ -41,9 +42,20 @@ struct Cutout: View {
             if extra && v == 0 { draw(oval(55, 17, 16, 40), hair) }
             if extra && v == 5 { draw(oval(51, 3, 15, 17), hair) }
             // Long trouser legs, adult shoulder width, and a visible neck replace the toddler silhouette.
+            if let walk = walkingPhase {
+                for leg in 0..<2 {
+                    let base = CGFloat(leg == 0 ? 27 : 51)
+                    let swing = sin(walk * 13 + Double(leg) * .pi)
+                    let shift = CGFloat(swing) * 6
+                    let lift = CGFloat(max(0,swing)) * 3
+                    draw(polygon([CGPoint(x:base-7,y:92),CGPoint(x:base+7,y:92),CGPoint(x:base+6+shift,y:121-lift),CGPoint(x:base-6+shift,y:121-lift)]),Color(red:0.19,green:0.24,blue:0.31))
+                    draw(Path(roundedRect:CGRect(x:base-10+shift,y:119-lift,width:20,height:7),cornerRadius:2),ink)
+                }
+            } else {
             draw(polygon([CGPoint(x: 20,y: 90),CGPoint(x: 60,y: 90),CGPoint(x: 57,y: 121),CGPoint(x: 44,y: 121),CGPoint(x: 40,y: 102),CGPoint(x: 36,y: 121),CGPoint(x: 22,y: 121)]), Color(red: 0.19, green: 0.24, blue: 0.31))
             draw(Path(roundedRect: CGRect(x: 17, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
             draw(Path(roundedRect: CGRect(x: 43, y: 119, width: 20, height: 7), cornerRadius: 2), ink)
+            }
             if (v == 2 || v == 4) && !(extra && v == 2) { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
             draw(Path(roundedRect: CGRect(x: 33, y: 43, width: 14, height: 19), cornerRadius: 3), skin)
             let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
@@ -230,7 +242,7 @@ struct GameView: View {
                         }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
                     }
                 }
-                Group { switch game.station { case "COUNTER": counter; case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
+                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)

@@ -64,3 +64,8 @@ Floating scan/payment/receipt cards have been removed from the game. Reduce Moti
 
 ## Personalized shopkeeper portrait (2.8)
 The playable shopkeeper now has a dedicated illustrated portrait with swept dark hair, close-cropped sides, black rectangular glasses, a short full beard and a blue crew-neck T-shirt. The scan animation shares its shirt and skin palette. Customer portraits remain separate. The character retains blinking, gentle breathing and Reduce Motion behavior. The capture workflow includes a full-size portrait preview.
+
+## Walking customers (2.9)
+The counter has a visible foreground walkway. Customers enter from the exit-side aisle, walk to the service spot with alternating legs and a walking bob, and pause for the transaction. Checkout keeps the served visitor visible for the handover, then they walk out carrying their VHS. The next visitor approaches only after the previous customer leaves. Counter actions pause during movement; other station tabs remain usable.
+
+The shopkeeper keeps the personalized portrait. Arrival is remembered across station changes so choosing a film does not replay the same customer's entrance. Reduce Motion swaps poses immediately. Movement is presentation-only and is never saved; imports and slot switches clear transient movement. Tests check lane endpoints, direction, clamping, handoff position and visitor identity. The simulator video captures a delayed arrival, full rental, departure and next-customer approach.

@@ -102,7 +102,7 @@ extension Store {
         let slot = try validateBackup(data)
         if let backup = try? exportShop() { UserDefaults.standard.set(backup,forKey:"nightowl.before-import.\(selectedSlot)") }
         s = slot.shop; story = slot.story; experience = slot.experience; neighborhood = slot.neighborhood; cinema = slot.cinema ?? CinemaProgress()
-        expandCatalog(); deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; effectID = UUID(); station = "COUNTER"
+        expandCatalog(); counterWalking = false; counterPresentedID = nil; deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; effectID = UUID(); station = "COUNTER"
         say("Backup imported into Shop \(selectedSlot + 1). Your previous shop was backed up first.")
     }
 }

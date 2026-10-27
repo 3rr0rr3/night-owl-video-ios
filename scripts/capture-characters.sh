@@ -31,7 +31,7 @@ sleep 2.3
 xcrun simctl io "$DEVICE" screenshot build/cash-register.png
 sleep 2.7
 xcrun simctl io "$DEVICE" screenshot build/rental-receipt.png
-sleep 2.6
+sleep 7.6
 kill -INT "$VIDEO_PID" || true
 wait "$VIDEO_PID" || true
 xcrun simctl io "$DEVICE" screenshot build/characters-in-store.png

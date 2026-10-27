@@ -12,14 +12,17 @@ source += r'''
         s.message = "Zoe: “A movie night for the night crew? Count us in.”"
         s.speakingGuest = s.s.guests.first?.id
         if ProcessInfo.processInfo.arguments.contains("--motion") {
+            s.s.guests = []
             Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                s.s.guests = [6,7,8].map { Guest(name:Cast.all[$0].name,genre:Cast.all[$0].genre,snack:$0 == 6) }
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
                 s.recommend(2); s.scan()
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 s.payment()
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
                 s.change = 3; s.checkout()
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                try? await Task.sleep(nanoseconds: 4_500_000_000)
                 s.talk()
             }
         }

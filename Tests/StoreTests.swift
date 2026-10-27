@@ -25,6 +25,7 @@ import Foundation
         store.change = 6
         store.checkout()
         assert(store.deskEvent?.kind == .sale && store.deskEvent?.amount == 4 && store.deskEvent?.change == 6)
+        assert(store.deskEvent?.movieID == 0 && store.deskEvent?.customerIndex != nil, "Counter retains the served guest and tape after checkout")
         assert(store.s.served == 1 && store.s.money == 154)
         assert(store.s.movies[0].stock == 2 && store.s.rentals == [0])
         store.s.guests = [Guest(name: "Snack", genre: "COMEDY", snack: true)]

@@ -209,9 +209,11 @@ struct GameView: View {
                     VStack(alignment: .trailing) { Text("$\(game.s.money)").font(.title2.bold()).foregroundStyle(gold); Text("LEVEL \(game.level)").font(.caption2.bold()).foregroundStyle(.secondary) }
                 }
                 HStack { Label("DAY \(game.s.day)", systemImage: "calendar"); Spacer(); Text(game.clock); Spacer(); Text(game.s.open ? "OPEN" : "CLOSED").foregroundStyle(game.s.open ? mint : coral) }.font(.system(size: 11, weight: .bold, design: .monospaced))
+                if game.station != "COUNTER" && game.station != "RETURNS" {
                 ShopArt().overlay(alignment: .topTrailing) {
                     if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
+                }
                 HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
                 Text("\(game.todayEvent.title.uppercased()) · \(game.reputationName)").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
                 NextTaskCard { withAnimation { proxy.scrollTo("station-actions",anchor: .top) } }
@@ -233,7 +235,7 @@ struct GameView: View {
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
         }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
-        .overlay(alignment: .bottom) { DeskFeedback().environmentObject(game) }
+        .safeAreaInset(edge:.top,spacing:0) { if game.station == "COUNTER" || game.station == "RETURNS" { SellingScene(isReturn:game.station == "RETURNS").environmentObject(game).padding(.horizontal,12).padding(.vertical,4).background(ink) } }
         .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
         .onAppear { showReport = game.experience.reportPending }
         .onChange(of: game.experience.reportPending) { pending in if pending { showReport = true } }
@@ -247,7 +249,7 @@ struct GameView: View {
         VStack(alignment: .leading, spacing: 12) {
             title("THE RENTAL COUNTER", "\(game.s.guests.count) in line")
             if let g = game.s.guests.first {
-                HStack { Cutout(index: g.characterIndex, speaking: game.speakingGuest == g.id).id(g.id).transition(.opacity); VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“\(game.request(g))”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
+                HStack { VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“\(game.request(g))”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
                 action("Talk to \(g.name)", "bubble.left.and.bubble.right", color: gold) { game.talk() }
                 if let i = g.movie { VHSCover(movie: game.s.movies[i]).frame(width: 95); Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
                 if g.movie == nil {

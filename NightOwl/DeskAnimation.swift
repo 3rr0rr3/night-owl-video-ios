@@ -7,11 +7,13 @@ struct DeskEvent: Identifiable {
     let title: String
     var amount = 0
     var change = 0
+    var customerIndex: Int? = nil
+    var movieID: Int? = nil
     let started = Date()
     var duration: Double { kind == .scan ? 1.8 : 2.6 }
 }
 extension Store {
     func deskCue(_ kind: DeskEvent.Kind,_ title: String,amount: Int = 0,change: Int = 0) {
-        deskEvent = DeskEvent(kind: kind,title: title,amount: amount,change: change)
+        deskEvent = DeskEvent(kind: kind,title: title,amount: amount,change: change,customerIndex:s.guests.first?.characterIndex,movieID:s.guests.first?.movie)
     }
 }

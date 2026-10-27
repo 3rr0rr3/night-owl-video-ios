@@ -1,0 +1,40 @@
+name: Render VHS cover gallery
+on:
+  push:
+    paths: [.github/workflows/render-covers.yml]
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render code-native cover artwork
+        run: |
+          cat > /tmp/CoverGallery.swift <<'SWIFT'
+          import SwiftUI
+          import AppKit
+          struct Movie { var id: Int; var title: String; var genre: String }
+          let ink = Color(red: 0.07,green: 0.08,blue: 0.15)
+          let mint = Color(red: 0.51,green: 0.94,blue: 0.74)
+          let gold = Color(red: 1,green: 0.79,blue: 0.35)
+          let coral = Color(red: 1,green: 0.43,blue: 0.39)
+          let palette: [Color] = [mint,coral,gold,.cyan,.pink,.purple]
+          let films = [Movie(id:0,title:"Moon Mall",genre:"SCI-FI"),Movie(id:1,title:"Camp After Dark",genre:"HORROR"),Movie(id:2,title:"Rad Dad",genre:"COMEDY"),Movie(id:3,title:"Last Bus Hero",genre:"ACTION"),Movie(id:4,title:"Love on Tape",genre:"ROMANCE"),Movie(id:5,title:"Tiny Detectives",genre:"FAMILY")]
+          @main struct RenderGallery {
+              @MainActor static func main() throws {
+                  let art = VStack(spacing: 16) {
+                      Text("NIGHT OWL · ORIGINAL VHS COVERS").font(.system(size: 18,weight: .black,design: .rounded)).foregroundStyle(mint)
+                      ForEach(0..<2) { row in
+                          HStack(spacing: 14) { ForEach(0..<3) { column in VHSCover(movie: films[row * 3 + column]).frame(width: 160,height: 210) } }
+                      }
+                  }.padding(24).background(ink).environment(\.colorScheme,.dark)
+                  let renderer = ImageRenderer(content: art)
+                  renderer.scale = 1.5
+                  guard let image = renderer.nsImage, let tiff = image.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png,properties: [:]) else { fatalError("Render failed") }
+                  print("GALLERY_PNG:" + png.base64EncodedString())
+              }
+          }
+          SWIFT
+          swiftc -parse-as-library /tmp/CoverGallery.swift NightOwl/VHSCover.swift -o /tmp/render-covers -framework SwiftUI -framework AppKit
+          /tmp/render-covers

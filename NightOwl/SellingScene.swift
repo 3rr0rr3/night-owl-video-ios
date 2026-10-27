@@ -112,7 +112,7 @@ struct SellingScene: View {
                 .rotationEffect(.degrees(walking ? sin(time * 13) * 1.4 : 0))
                 .offset(y:walking ? -abs(sin(time * 13)) * 2 : 0)
                 .overlay(alignment:.trailing) {
-                    if let id = person.movie, game.s.movies.indices.contains(id) {
+                    if walkStage == .leaving, let id = person.movie, game.s.movies.indices.contains(id) {
                         VHSCover(movie:game.s.movies[id]).frame(width:23,height:31).rotationEffect(.degrees(10)).offset(x:-3,y:20)
                     }
                 }

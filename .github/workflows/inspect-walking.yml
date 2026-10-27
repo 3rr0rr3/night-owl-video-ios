@@ -1,0 +1,67 @@
+name: Inspect walking customer sequence
+on:
+  push:
+    paths: [.github/workflows/inspect-walking.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: macos-15
+    steps:
+      - name: Wait for app and walking video
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for RUN in 40528630040 40528629868; do
+            READY=0
+            for N in {1..80}; do
+              STATE=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq '.status+" "+(.conclusion//"")' 2>/dev/null || true)
+              if [ "$STATE" = "completed success" ]; then READY=1; break; fi
+              case "$STATE" in "completed failure"|"completed cancelled") exit 1;; esac
+              sleep 15
+            done
+            test "$READY" = 1
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40528629868
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40528630040
+          github-token: ${{ github.token }}
+      - name: Validate IPA and inspect walking frames
+        run: |
+          python3 - <<'PY'
+          import zipfile,plistlib,struct
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          b=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',b)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='2.9'
+          print('PASS: valid arm64 IPA version 2.9')
+          PY
+          cat > /tmp/walk.swift <<'SWIFT'
+          import AVFoundation
+          import AppKit
+          let asset = AVURLAsset(url:URL(fileURLWithPath:"previews/store-animation.mp4"))
+          precondition(CMTimeGetSeconds(asset.duration) >= 15)
+          let generator = AVAssetImageGenerator(asset:asset)
+          generator.appliesPreferredTrackTransform = true
+          generator.maximumSize = CGSize(width:800,height:800)
+          generator.requestedTimeToleranceBefore = .zero
+          generator.requestedTimeToleranceAfter = .zero
+          for (index,time) in [1.5,2.0,10.0,11.0,12.0,13.0].enumerated() {
+              let cg = try generator.copyCGImage(at:CMTime(seconds:time,preferredTimescale:600),actualTime:nil)
+              let data = NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:])!
+              print("WALK_\(index)_PNG:"+data.base64EncodedString())
+          }
+          print("PASS: full walking sequence video validated")
+          SWIFT
+          swift /tmp/walk.swift

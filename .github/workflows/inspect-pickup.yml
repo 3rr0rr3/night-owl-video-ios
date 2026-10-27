@@ -1,0 +1,70 @@
+name: Verify icon and movie pickup
+on:
+  push:
+    paths: [.github/workflows/inspect-pickup.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: macos-15
+    steps:
+      - name: Wait for package and recording
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for RUN in 40532843086 40532842686; do
+            READY=0
+            for N in {1..80}; do
+              STATE=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$RUN --jq '.status+" "+(.conclusion//"")' 2>/dev/null || true)
+              if [ "$STATE" = "completed success" ]; then READY=1; break; fi
+              case "$STATE" in "completed failure"|"completed cancelled") exit 1;; esac
+              sleep 15
+            done
+            test "$READY" = 1
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-character-screenshots
+          path: previews
+          run-id: 40532842686
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: NightOwl-SideStore
+          path: package
+          run-id: 40532843086
+          github-token: ${{ github.token }}
+      - name: Validate icon bundle and movie pickup frames
+        run: |
+          python3 - <<'PY'
+          import zipfile,plistlib,struct
+          z=zipfile.ZipFile('package/NightOwl.ipa')
+          assert z.testzip() is None
+          info=plistlib.loads(z.read('Payload/NightOwl.app/Info.plist'))
+          b=z.read('Payload/NightOwl.app/NightOwl')
+          assert struct.unpack_from('<II',b)==(0xfeedfacf,0x100000c)
+          assert info['CFBundleShortVersionString']=='3.0'
+          assert info['CFBundleIcons']['CFBundlePrimaryIcon']['CFBundleIconName']=='AppIcon'
+          assert 'Payload/NightOwl.app/Assets.car' in z.namelist()
+          assert any('AppIcon' in n and n.endswith('.png') for n in z.namelist())
+          print('PASS: valid arm64 IPA 3.0 with compiled icon catalog and registered Home Screen icon')
+          PY
+          cat > /tmp/pickup.swift <<'SWIFT'
+          import AVFoundation
+          import AppKit
+          let asset = AVURLAsset(url:URL(fileURLWithPath:"previews/store-animation.mp4"))
+          precondition(CMTimeGetSeconds(asset.duration) >= 19)
+          let generator = AVAssetImageGenerator(asset:asset)
+          generator.appliesPreferredTrackTransform = true
+          generator.maximumSize = CGSize(width:800,height:800)
+          generator.requestedTimeToleranceBefore = .zero
+          generator.requestedTimeToleranceAfter = .zero
+          for (index,time) in [6.5,7.5,8.5,9.3].enumerated() {
+              let cg = try generator.copyCGImage(at:CMTime(seconds:time,preferredTimescale:600),actualTime:nil)
+              let data = NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:])!
+              print("PICKUP_\(index)_PNG:"+data.base64EncodedString())
+          }
+          print("PASS: pickup sequence video inspected")
+          SWIFT
+          swift /tmp/pickup.swift

@@ -45,7 +45,36 @@ struct Save: Codable {
     var reservations: [Int] = []
     var held: [Int] = []
 }
+enum ShopLifeKind { case opening, closing, returnDrop, rewindDone, restock }
+struct ShopLifeEvent: Identifiable {
+    let id = UUID()
+    let kind: ShopLifeKind
+    let title: String
+    let movie: Int?
+    let started = Date()
+}
+struct ShopCelebration: Identifiable {
+    let id = UUID()
+    let title: String
+    let movie: Int?
+    let rare: Bool
+    let started = Date()
+}
 @MainActor final class Store: ObservableObject {
+    @Published var lifeEvent: ShopLifeEvent? = nil
+    @Published var celebration: ShopCelebration? = nil
+    @Published var unsureGuest: UUID? = nil
+    func shopAction(_ kind: ShopLifeKind, _ title: String, movie: Int? = nil) {
+        let event = ShopLifeEvent(kind:kind,title:title,movie:movie)
+        lifeEvent = event
+        Task { try? await Task.sleep(nanoseconds:3_200_000_000); if self.lifeEvent?.id == event.id { self.lifeEvent = nil } }
+    }
+    func celebrate(_ title: String,movie: Int? = nil,rare: Bool = false) {
+        let reward = ShopCelebration(title:title,movie:movie,rare:rare)
+        celebration = reward
+        Task { try? await Task.sleep(nanoseconds:4_000_000_000); if self.celebration?.id == reward.id { self.celebration = nil } }
+    }
+    func clearShopLife() { lifeEvent = nil; celebration = nil; unsureGuest = nil }
     @Published var cinema = CinemaProgress()
     @Published var neighborhood = Neighborhood()
     @Published var selectedSlot = 0
@@ -141,6 +170,7 @@ struct Save: Codable {
     }
     var hasSavedGame: Bool { UserDefaults.standard.data(forKey: "nightowl.save") != nil }
     func newGame() {
+        clearShopLife()
         let relaxed = experience.relaxed; let autoChange = experience.autoChange
         experience = Experience(); experience.relaxed = relaxed; experience.autoChange = autoChange; relaxedBeat = false
         let effects = neighborhood.effects; let music = neighborhood.music
@@ -185,17 +215,19 @@ struct Save: Codable {
         if s.minutes % max(8,(s.day % 3 == 0 ? 14 : 22) - neighborhood.reputation / 10) == 0 { addGuest() }
         if s.minutes % 47 == 0 { s.dirt = min(8, s.dirt + 1) }
         if s.staff && s.minutes % 15 == 0 { if !s.returns.isEmpty { s.returns[0].rewound = true }; s.dirt = max(0, s.dirt - 1) }
-        if s.minutes >= 1200 { s.open = false; say("Closing time. Finish the queue and returns, then close the day.") }
+        if s.minutes >= 1200 { shopAction(.closing,"Closing time · sign flipped and lights dimmed"); s.open = false; say("Closing time. Finish the queue and returns, then close the day.") }
         save()
     }
     func doors() {
         guard !s.open else { return }
+        shopAction(.opening,"Opening the shop · lights on, shutters up!")
         s.open = true; offerSurprise(); if s.minutes >= 1200 { s.minutes = 600 }; addGuest(); say("Doors open! Match a movie to each customer's request.")
     }
     func recommend(_ i: Int) {
         guard s.movies.indices.contains(i), !s.guests.isEmpty, s.guests[0].movie == nil else { return }
         guard s.movies[i].stock > 0 else { say("Out of stock. Order more on the store PC."); return }
-        guard s.movies[i].genre == s.guests[0].genre else { say("That's not the genre they asked for. Try another shelf."); return }
+        guard s.movies[i].genre == s.guests[0].genre else { unsureGuest = s.guests[0].id; say("That's not the genre they asked for. Try another shelf."); return }
+        unsureGuest = nil
         s.guests[0].movie = i; moviePickup = MoviePickup(guestID:s.guests[0].id,movie:i); say("Great choice! I’ll get that tape from the back shelf.")
     }
     func scan() { guard !s.guests.isEmpty, s.guests[0].movie != nil else { say("Choose a movie from the shelves first."); return }; guard !s.guests[0].scanned else { return }; s.guests[0].scanned = true; deskCue(.scan,s.movies[s.guests[0].movie!].title); say("Rental scanned. Collect payment, then count out the change.") }
@@ -231,24 +263,26 @@ struct Save: Codable {
             let fee = (s.returns[0].late ? 2 : 0) + (s.returns[0].damaged ? 5 : 0)
             if fee > 0 { deskCue(.fee,"Return fees received",amount: fee) }
             s.money += fee; s.sales += fee; s.returns[0].assessed = true; say(fee > 0 ? "Collected $\(fee) in late / damage fees. Customer grumbles." : "No fees. Thanks for returning on time!")
-        case "rewind": s.returns[0].rewound = true; say("Whirrr… tape rewound to the beginning.")
+        case "rewind": shopAction(.rewindDone,"Rewinder clicks to a stop · tape ready",movie:s.returns[0].movie); s.returns[0].rewound = true; say("Whirrr… tape rewound to the beginning.")
         default:
             let t = s.returns[0]
             guard t.scanned && t.assessed && t.rewound else { say("Scan, inspect fees, and rewind this tape first."); return }
             if s.reservations.contains(t.movie) { s.reservations.removeAll { $0 == t.movie }; s.held.append(t.movie); say("Reserved copy set aside. Collect it from the reservations desk.") }
             else { s.movies[t.movie].stock += 1; say("Tape shelved in \(s.movies[t.movie].genre).") }
+            shopAction(.restock,"Returning \(s.movies[t.movie].title) to the shelf",movie:t.movie)
             s.returns.removeFirst(); s.xp += 5; story.returns += 1; experience.returns += 1
         }
         save()
     }
     func collectHold(_ i: Int) { guard s.held.contains(i) else { return }; deskCue(.sale,"Reserved rental collected",amount: 4); story.rentals += 1; experience.customers += 1; cashBurst(4); s.held.removeAll { $0 == i }; s.rentals.append(i); s.money += 4; s.sales += 4; s.xp += 5; neighborhood.reputation = min(100,neighborhood.reputation + 1); completeEvent(); say("Reserved rental collected. +$4") }
-    func buy(_ i: Int) { guard s.movies.indices.contains(i), s.money >= orderCost else { say("You need $\(orderCost) to order a tape."); return }; s.money -= orderCost; experience.expenses += orderCost; s.movies[i].stock += 1; story.orders += 1; if neighborhood.reputation >= 25 && story.orders % 3 == 0 { s.movies[i].stock += 1; discoverRare(i) }; say("Delivery arrived: \(s.movies[i].title). +1 copy") }
+    func buy(_ i: Int) { guard s.movies.indices.contains(i), s.money >= orderCost else { say("You need $\(orderCost) to order a tape."); return }; s.money -= orderCost; experience.expenses += orderCost; s.movies[i].stock += 1; shopAction(.restock,"Restocking \(s.movies[i].title)",movie:i); story.orders += 1; if neighborhood.reputation >= 25 && story.orders % 3 == 0 { s.movies[i].stock += 1; discoverRare(i) }; say("Delivery arrived: \(s.movies[i].title). +1 copy") }
     func clean() { guard s.dirt > 0 else { say("The store is spotless."); return }; s.dirt -= 1; s.xp += 2; story.cleanups += 1; say("Spill cleaned. A tidy store keeps customers happy.") }
     func upgrade() { let cost = 40 + s.decor * 30; guard s.money >= cost else { say("Save $\(cost) for the next store upgrade."); return }; s.money -= cost; experience.expenses += cost; s.decor += 1; s.xp += 10; say("New posters and shelf space! Store style upgraded.") }
     func hire() { guard !s.staff, s.money >= 60 else { say("Hiring costs $60; wages are $15 per day."); return }; s.money -= 60; experience.expenses += 60; s.staff = true; say("Bea joined the team. She helps clean and rewind during opening hours.") }
     func nextDay() {
         guard canCloseShift else { say("Finish the queue and process returns beyond your carryover capacity before closing."); return }
         guard s.open || s.minutes >= 1200 || s.sales > 0 || !s.rentals.isEmpty else { say("Open the store and finish a shift before starting a new day."); return }
+        shopAction(.closing,"Shift complete · shutters down, lights out")
         let bills = 15 + (s.staff ? 15 : 0)
         let grant = s.money - bills < 0 ? 25 - (s.money - bills) : 0
         experience.report = DayReport(day: s.day,revenue: s.sales,bonus: experience.bonus,purchases: experience.expenses,bills: bills,customers: experience.customers,returns: experience.returns,grant: grant,tomorrow: "Day \(s.day + 1): \(s.rentals.count) returns expected. " + ((s.day + 1) % 3 == 0 ? "Rainy-day rush tomorrow. Restock popular genres." : "Check stock, process returns, and continue your Story goals."))

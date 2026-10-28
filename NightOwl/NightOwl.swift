@@ -193,6 +193,7 @@ struct ShopArt: View {
                     }
                 }
                 VStack { Spacer(); HStack { Button("▰ RETURNS \(game.s.returns.count)") { game.station = "RETURNS" }.frame(minHeight:44); Spacer(); Button("◉ REGISTER") { game.station = "COUNTER" }.frame(minHeight:44) }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundStyle(mint).padding(.horizontal,12).background(ink).overlay(alignment: .top) { Rectangle().fill(game.experience.counter == "counter-gold" ? gold : (game.experience.counter == "counter-lavender" ? Color.purple : coral)).frame(height: 4) } }
+                ShopAmbience()
                 if game.s.decor > 0 { Image(systemName: game.storyFinished ? "star.circle.fill" : "sparkles").foregroundStyle(gold).position(x: geo.size.width - 32, y: 30) }
             }
         }.frame(height: 275).clipShape(RoundedRectangle(cornerRadius: 18))
@@ -248,6 +249,14 @@ struct GameView: View {
             }.padding(20).frame(maxWidth: 650)
         }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
         .safeAreaInset(edge:.top,spacing:0) { if game.station == "COUNTER" || game.station == "RETURNS" { SellingScene(isReturn:game.station == "RETURNS").environmentObject(game).padding(.horizontal,12).padding(.vertical,4).background(ink) } }
+        .safeAreaInset(edge:.bottom,spacing:4) {
+            if game.lifeEvent != nil || game.celebration != nil {
+                VStack(spacing:4) { ShopActionScene(); CelebrationBanner() }.padding(.horizontal,12).padding(.bottom,4).background(ink)
+            }
+        }
+        .onChange(of:game.station) { station in
+            if station == "RETURNS", let tape = game.s.returns.first { game.shopAction(.returnDrop,"Returned VHS drops into the bin",movie:tape.movie) }
+        }
         .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
         .onAppear { showReport = game.experience.reportPending }
         .onChange(of: game.experience.reportPending) { pending in if pending { showReport = true } }

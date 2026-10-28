@@ -39,7 +39,31 @@ source += r'''
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--portrait") {
+            if ProcessInfo.processInfo.arguments.contains("--life") {
+                ScrollView {
+                    VStack(spacing:12) {
+                        Text("NIGHT OWL · LIVING SHOP").font(.headline).foregroundStyle(mint)
+                        ShopArt(); BrowsingScene()
+                        LifeClock { time in HStack { CustomerGesture(index:6,mood:"talk",time:time); CustomerGesture(index:7,mood:"waiting",time:time); CustomerGesture(index:8,mood:"happy",time:time) } }
+                        ShopActionScene(); CelebrationBanner()
+                    }.padding(14)
+                }.background(ink).environmentObject(store).preferredColorScheme(.dark)
+                    .task {
+                        store.s.day = 3; store.shopAction(.opening,"Opening · lights on, shutters up")
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.shopAction(.returnDrop,"Return drops into the bin",movie:0)
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.shopAction(.rewindDone,"Rewinder clicks to a stop",movie:0)
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.shopAction(.restock,"Restocking the shelves",movie:2)
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.neighborhood.friendship["6"] = 2; store.befriend(6)
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.discoverRare(3)
+                        try? await Task.sleep(nanoseconds:4_000_000_000)
+                        store.s.open = false; store.shopAction(.closing,"Closing · shutters down, lights out")
+                    }
+            } else if ProcessInfo.processInfo.arguments.contains("--portrait") {
                 VStack(spacing:24) {
                     Text("YOUR NIGHT OWL SHOPKEEPER").font(.system(size:20,weight:.black,design:.rounded)).foregroundStyle(mint)
                     PlayerPortrait().scaleEffect(2.8).frame(width:240,height:365)

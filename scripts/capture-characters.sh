@@ -38,3 +38,12 @@ wait "$VIDEO_PID" || true
 xcrun simctl io "$DEVICE" screenshot build/characters-in-store.png
 xcrun simctl terminate "$DEVICE" com.nightowl.videostore
 test -s build/store-animation.mp4
+
+xcrun simctl launch "$DEVICE" com.nightowl.videostore --life
+xcrun simctl io "$DEVICE" recordVideo --codec=h264 build/living-shop.mp4 &
+LIFE_RECORDER=$!
+sleep 29
+kill -INT "$LIFE_RECORDER"
+wait "$LIFE_RECORDER" || true
+xcrun simctl io "$DEVICE" screenshot build/living-shop.png
+xcrun simctl terminate "$DEVICE" com.nightowl.videostore

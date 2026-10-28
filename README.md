@@ -74,3 +74,7 @@ The shopkeeper keeps the personalized portrait. Arrival is remembered across sta
 Night Owl has an original opaque mint/gold VHS-owl icon with a crescent moon and stars. The standard-library icon generator produces iPhone/iPad sizes and a 1024px marketing icon. Xcode actool compiles the asset catalog and merges its icon metadata into the IPA and simulator bundles.
 
 Choosing a film queues a visible shopkeeper pickup: walk back to the stock shelf, take the selected tape and walk to the counter carrying its cover. The tape rests on the scanner afterward. Counter actions pause until retrieval completes, and Reduce Motion immediately readies the tape. Unscanned selections restore a pending pickup after loading a save; scan/payment/rental state and stock accounting remain unchanged. Pickup motion and pending state are presentation-only and do not spend or duplicate stock.
+
+## Version 3.1 — a living video store
+
+Adds shelf browsing with cover inspection, conversation gestures, relaxed waiting/watch gestures, connected tape handoffs, return-bin drops and rewind completion, clerk restocking, fan/CRT/neon/rain ambience, opening and closing shutters, customer reactions, and friendship/rare-tape celebrations. All movement respects Reduce Motion and pauses in the background. Waiting is cosmetic and does not reduce patience or impose a penalty. Presentation events expire independently of saves, stock and payments; a newer cue cannot be cleared by an older timer.

@@ -68,6 +68,7 @@ struct DayReportView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                ShopActionScene().padding(.horizontal,24)
                 if let report = game.experience.report {
                     VStack(alignment: .leading,spacing: 18) {
                         Label("DAY \(report.day) COMPLETE",systemImage: "moon.stars.fill").font(.title2.bold()).foregroundStyle(mint)

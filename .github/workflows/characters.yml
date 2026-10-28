@@ -40,6 +40,8 @@ jobs:
             build/barcode-scan.png
             build/cash-register.png
             build/rental-receipt.png
+            build/living-shop.mp4
+            build/living-shop.png
             build/store-animation.mp4
             build/characters-in-store.png
           if-no-files-found: error

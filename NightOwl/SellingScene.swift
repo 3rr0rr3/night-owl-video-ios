@@ -15,11 +15,12 @@ struct SellingScene: View {
     @State private var walkToken = UUID()
     private var event: DeskEvent? { guard let value = game.deskEvent, Date().timeIntervalSince(value.started) < value.duration else { return nil }; return value }
     var body: some View {
-        TimelineView(.animation(minimumInterval:1.0/30,paused:(!animating && !game.counterWalking && game.moviePickup == nil) || reduceMotion || phase != .active)) { clock in
+        TimelineView(.animation(minimumInterval:1.0/30,paused:(!animating && !game.counterWalking && game.moviePickup == nil && game.s.guests.isEmpty) || reduceMotion || phase != .active)) { clock in
             let cue = event
             let elapsed = cue.map { max(0,clock.date.timeIntervalSince($0.started)) } ?? 0
             let progress = reduceMotion ? 1 : min(1,elapsed / 0.9)
             let selling = cue?.kind == .sale
+            let idleTime = reduceMotion ? 0 : max(0,clock.date.timeIntervalSince(walkStarted))
             let walkTime = max(0,clock.date.timeIntervalSince(walkStarted))
             let pickupTime = max(0,clock.date.timeIntervalSince(pickupStarted))
             VStack(spacing:0) {
@@ -31,6 +32,7 @@ struct SellingScene: View {
                         Rectangle().fill(Color(red:0.23,green:0.28,blue:0.33)).frame(height:55).offset(y:175)
                         ForEach(0..<6) { n in Rectangle().fill(.white.opacity(0.04)).frame(width:1,height:55).offset(x:CGFloat(n)*70,y:175) }
                         Text("EXIT →").font(.system(size:7,weight:.black,design:.monospaced)).foregroundStyle(mint).padding(4).background(ink,in:RoundedRectangle(cornerRadius:3)).position(x:width-24,y:57)
+                        ShopAmbience()
                         stockShelf(width:width)
                         retrievingClerk(width:width,time:pickupTime)
                         // The shopkeeper reaches across the actual counter during scanning.
@@ -48,6 +50,9 @@ struct SellingScene: View {
                                 .rotationEffect(.degrees(-12 + progress * 12)).position(x:width * (0.85 - progress * 0.27),y:81 + progress * 52)
                         }
                         if selling && walkStage == .handoff, let cue {
+                            Capsule().fill(PlayerPalette.shirt).frame(width:width * 0.23,height:14)
+                                .overlay(alignment:.trailing) { Circle().fill(PlayerPalette.skin).frame(width:16,height:16) }
+                                .position(x:width * (0.52 + progress * 0.12),y:117)
                             HStack(spacing:2) { ForEach(0..<min(6,cue.change)) { _ in Circle().fill(gold).frame(width:8,height:8) } }
                                 .position(x:width * (reduceMotion ? 0.83 : 0.59 + progress * 0.24),y:145)
                             if let id = cue.movieID, game.s.movies.indices.contains(id) {
@@ -58,7 +63,7 @@ struct SellingScene: View {
                             VHSCover(movie:game.s.movies[movie]).frame(width:24,height:32).rotationEffect(.degrees(-8)).position(x:width * 0.30,y:123)
                         }
                         if !isReturn, let customer {
-                            walkingCustomer(customer,time:walkTime)
+                            walkingCustomer(customer,time:walkTime,idle:idleTime)
                                 .position(x:reduceMotion ? width * 0.83 : CGFloat(CustomerWalking.position(stage:walkStage,elapsed:walkTime,width:Double(width))),y:135)
                         }
                     }.clipped()
@@ -149,16 +154,26 @@ struct SellingScene: View {
             walkStage = .waiting
         } else { customer = nil; walkStage = .waiting; game.counterPresentedID = nil }
     }
-    private func walkingCustomer(_ person: CounterCustomer,time:Double) -> some View {
+    private func walkingCustomer(_ person: CounterCustomer,time:Double,idle:Double) -> some View {
         let walking = !reduceMotion && (walkStage == .arriving || walkStage == .leaving)
         return VStack(spacing:0) {
-            Text(walkStage == .handoff ? "THANK YOU!" : person.name.uppercased()).font(.system(size:8,weight:.heavy)).foregroundStyle(gold)
-            Cutout(index:person.index,walkingPhase:walking ? time : nil)
+            Text(walkStage == .handoff ? "THANK YOU!" : (walkStage == .waiting && idle > 12 ? "TAKE YOUR TIME…" : person.name.uppercased())).font(.system(size:8,weight:.heavy)).foregroundStyle(gold)
+            Group {
+                if walking { Cutout(index:person.index,walkingPhase:time) }
+                else { CustomerGesture(index:person.index,mood:walkStage == .handoff ? "happy" : (game.unsureGuest == person.id ? "unsure" : (game.speakingGuest == person.id ? "talk" : (idle > 12 ? "waiting" : "idle"))),time:reduceMotion ? 0 : time) }
+            }
                 .rotationEffect(.degrees(walking ? sin(time * 13) * 1.4 : 0))
                 .offset(y:walking ? -abs(sin(time * 13)) * 2 : 0)
                 .overlay(alignment:.trailing) {
                     if walkStage == .leaving, let id = person.movie, game.s.movies.indices.contains(id) {
                         VHSCover(movie:game.s.movies[id]).frame(width:23,height:31).rotationEffect(.degrees(10)).offset(x:-3,y:20)
+                    }
+                }
+                .overlay(alignment:.leading) {
+                    if walkStage == .leaving && person.movie != nil {
+                        Capsule().fill(palette[person.index % 6]).frame(width:11,height:29)
+                            .overlay(alignment:.top) { Circle().fill(Color(red:0.85,green:0.65,blue:0.48)).frame(width:12,height:12) }
+                            .rotationEffect(.degrees(-25 + (reduceMotion ? 0 : sin(time * 9) * 18)),anchor:.bottom).offset(x:7,y:-22)
                     }
                 }
         }.frame(width:80,height:150)

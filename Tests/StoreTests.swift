@@ -265,6 +265,30 @@ import Foundation
         retrieval.save(); let resumed = Store(); assert(resumed.moviePickup?.movie == 0 && resumed.s.guests.first?.movie == 0)
         retrieval.scan(); retrieval.save(); let scanned = Store(); assert(scanned.moviePickup == nil)
         print("PASS: selected-tape pickup identity, backroom and return endpoints, stale completion guard, stock safety and unscanned-save resume")
+        let living = Store(); living.newGame(); living.experience.tutorialDone = true
+        living.doors(); assert(living.lifeEvent?.kind == .opening)
+        let openingID = living.lifeEvent!.id
+        living.doors(); assert(living.lifeEvent?.id == openingID, "Already-open doors must not replay")
+        let stock = living.s.movies[0].stock
+        living.buy(0); assert(living.lifeEvent?.kind == .restock && living.s.movies[0].stock == stock + 1)
+        living.s.money = 0; let restockID = living.lifeEvent!.id
+        living.buy(0); assert(living.lifeEvent?.id == restockID, "Rejected purchases must not animate")
+        living.neighborhood.rare = []; living.discoverRare(0)
+        let rareID = living.celebration!.id
+        living.discoverRare(0); assert(living.celebration?.id == rareID && living.neighborhood.rare == [0])
+        living.neighborhood.friendship["1"] = 2; living.befriend(1)
+        assert(living.bond(1) == 3 && living.celebration != nil)
+        living.save(); let lifeReload = Store(); assert(lifeReload.lifeEvent == nil && lifeReload.celebration == nil)
+        living.shopAction(.returnDrop,"First",movie:0)
+        try? await Task.sleep(nanoseconds:1_500_000_000)
+        living.shopAction(.rewindDone,"Newer",movie:1)
+        let newestID = living.lifeEvent!.id
+        try? await Task.sleep(nanoseconds:1_900_000_000)
+        assert(living.lifeEvent?.id == newestID, "Old timer must not clear the latest animation")
+        try? await Task.sleep(nanoseconds:1_400_000_000)
+        assert(living.lifeEvent == nil)
+        living.newGame(); assert(living.lifeEvent == nil && living.celebration == nil && living.unsureGuest == nil)
+        print("PASS: action-linked opening/restocking, rejected-action guards, rare discovery once, friendship milestones, transient saves and stale animation timers")
         migrated.newGame()
         assert(migrated.deskEvent == nil)
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)

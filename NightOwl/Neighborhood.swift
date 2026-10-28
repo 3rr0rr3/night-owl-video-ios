@@ -38,7 +38,9 @@ extension Store {
     func bond(_ index: Int) -> Int { neighborhood.friendship[String(index),default: 0] }
     func befriend(_ index: Int) {
         let key = String(index)
-        neighborhood.friendship[key] = min(6,bond(index) + 1)
+        let previous = bond(index)
+        neighborhood.friendship[key] = min(6,previous + 1)
+        if bond(index) != previous && [3,6].contains(bond(index)) { celebrate("\(Cast.all[index].name) · \(bond(index) == 6 ? "Best friends!" : "New friendship badge!")") }
         if bond(index) >= 3 && !neighborhood.gifts.contains(index) {
             neighborhood.gifts.append(index)
             discoverRare(index % 6)
@@ -46,7 +48,7 @@ extension Store {
     }
     func discoverRare(_ id: Int) {
         let edition = id % 6
-        if !neighborhood.rare.contains(edition) { neighborhood.rare.append(edition) }
+        if !neighborhood.rare.contains(edition) { neighborhood.rare.append(edition); celebrate("Rare VHS discovered · \(s.movies[edition].title)",movie:edition,rare:true) }
     }
     func donationBox() {
         guard neighborhood.searchedDay != s.day else { say("The donation box is empty. Check again tomorrow."); return }
@@ -96,6 +98,7 @@ extension Store {
     func switchSlot(_ slot: Int) {
         guard (0..<3).contains(slot), slot != selectedSlot else { return }
         if hasSavedGame { save() }
+        clearShopLife()
         selectedSlot = slot; UserDefaults.standard.set(slot,forKey: "nightowl.active-slot")
         moviePickup = nil
         counterWalking = false; counterPresentedID = nil

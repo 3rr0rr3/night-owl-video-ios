@@ -28,6 +28,7 @@ struct FilmBrowser: View {
     }.sorted { $0.title < $1.title } }
     var body: some View {
         VStack(alignment:.leading,spacing:14) {
+            if !ordering { BrowsingScene() }
             TextField("Search title, mood or synopsis",text:$search).textFieldStyle(.roundedBorder).autocorrectionDisabled()
             HStack { Picker("Genre",selection:$genre) { Text("All genres").tag("ALL"); ForEach(FilmLibrary.genres,id:\.self) { Text($0.capitalized).tag($0) } }; Picker("Mood",selection:$tag) { Text("All moods").tag("ALL"); ForEach(["adventure","chaotic","city","cozy","funny","gentle","mystery","nostalgic","rescue","space","spooky","strange","sweet","thrilling"],id:\.self) { Text($0.capitalized).tag($0) } } }
             Toggle("In stock only",isOn:$available).font(.caption).tint(mint)

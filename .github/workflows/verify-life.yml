@@ -1,4 +1,4 @@
-name: Verify Town expansion
+name: Verify friendly interface
 on:
   push:
     branches: [inspect-living-shop-3-1]
@@ -14,7 +14,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for run in 40704285947 40704286027; do
+          for run in 40726025630 40726025608; do
             for attempt in {1..65}; do
               state=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$run --jq '.status' 2>/dev/null || echo retry)
               if [ "$state" = completed ]; then
@@ -28,16 +28,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40704285947
+          run-id: 40726025630
           name: NightOwl-SideStore
           path: ipa
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40704286027
+          run-id: 40726025608
           name: NightOwl-character-screenshots
           path: previews
-      - name: Verify IPA and render Town previews
+      - name: Verify IPA and interface screenshots
         run: |
           python3 - <<'PY'
           import zipfile, plistlib, struct, base64, subprocess
@@ -45,13 +45,13 @@ jobs:
           assert z.testzip() is None
           root='Payload/NightOwl.app/'
           info=plistlib.loads(z.read(root+'Info.plist'))
-          assert info['CFBundleShortVersionString']=='4.0'
-          assert info['CFBundleVersion']=='18'
+          assert info['CFBundleShortVersionString']=='4.1'
+          assert info['CFBundleVersion']=='19'
           assert info['CFBundleIcons']['CFBundlePrimaryIcon']['CFBundleIconName']=='AppIcon'
           assert root+'Assets.car' in z.namelist()
           assert struct.unpack_from('<I',z.read(root+'NightOwl'),4)[0]==0x100000c
-          print('PASS: IPA CRC, arm64 executable, version 4.0 build 18 and app icon')
-          for name in ['floorplan','usedtapes','movieclub','gazette','forecast','world','library']:
-              subprocess.run(['sips','-Z','900','previews/'+name+'.png','--out',name+'-small.png'],check=True)
-              print(name.upper()+'_PNG:'+base64.b64encode(open(name+'-small.png','rb').read()).decode())
+          print('PASS: IPA CRC, arm64 executable, version 4.1 build 19 and app icon',flush=True)
+          for name in ['ui-more','ui-films','ui-returns','ui-shop','ui-checkout','ui-compact','ui-large']:
+              subprocess.run(['sips','-Z','900','previews/'+name+'.png','--out',name+'-small.png'],check=True,stdout=subprocess.DEVNULL)
+              print(name.upper().replace('-','_')+'_PNG:'+base64.b64encode(open(name+'-small.png','rb').read()).decode(),flush=True)
           PY

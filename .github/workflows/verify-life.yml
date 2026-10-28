@@ -64,7 +64,7 @@ jobs:
           gen.requestedTimeToleranceAfter = .zero
           for (i,t) in [2.0,2.4,2.8,3.2,3.6,4.0,4.4,4.8,5.2,5.6].enumerated() {
               let full=try gen.copyCGImage(at:CMTime(seconds:t,preferredTimescale:600),actualTime:nil)
-              let crop=full.cropping(to:CGRect(x:0,y:0,width:full.width,height:Int(Double(full.height)*0.59)))!
+              let crop=full.cropping(to:CGRect(x:0,y:0,width:CGFloat(full.width),height:CGFloat(full.height)*0.59))!
               let data=NSBitmapImageRep(cgImage:crop).representation(using:.png,properties:[:])!
               try data.write(to:URL(fileURLWithPath:"frames/handoff-\(i).png"))
               print("HANDOFF_\(i)_PNG:"+data.base64EncodedString())

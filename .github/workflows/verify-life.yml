@@ -62,7 +62,7 @@ jobs:
           gen.maximumSize=CGSize(width:900,height:900)
           gen.requestedTimeToleranceBefore = .zero
           gen.requestedTimeToleranceAfter = .zero
-          for (i,t) in [2.0,2.4,2.8,3.2,3.6,4.0,4.4,4.8,5.2,5.6].enumerated() {
+          for (i,t) in [0.05,0.15,0.3,0.45,0.6,0.8,1.0,1.2,1.4,1.6].enumerated() {
               let full=try gen.copyCGImage(at:CMTime(seconds:t,preferredTimescale:600),actualTime:nil)
               let crop=full.cropping(to:CGRect(x:0,y:0,width:CGFloat(full.width),height:CGFloat(full.height)*0.59))!
               let data=NSBitmapImageRep(cgImage:crop).representation(using:.png,properties:[:])!

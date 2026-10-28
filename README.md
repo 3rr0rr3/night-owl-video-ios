@@ -78,3 +78,7 @@ Choosing a film queues a visible shopkeeper pickup: walk back to the stock shelf
 ## Version 3.1 — a living video store
 
 Adds shelf browsing with cover inspection, conversation gestures, relaxed waiting/watch gestures, connected tape handoffs, return-bin drops and rewind completion, clerk restocking, fan/CRT/neon/rain ambience, opening and closing shutters, customer reactions, and friendship/rare-tape celebrations. All movement respects Reduce Motion and pauses in the background. Waiting is cosmetic and does not reduce patience or impose a penalty. Presentation events expire independently of saves, stock and payments; a newer cue cannot be cleared by an older timer.
+
+## Version 3.2 — connected customer gestures
+
+Replaces floating sleeve overlays with articulated arms drawn inside each customer canvas. Gestures replace the original arm and use the actual shirt and skin colors. Waiting watch stays on the wrist, departure waves stay attached while walking, and carried VHS cases sit beside the other hand. Keeps customer names visible while waiting.

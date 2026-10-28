@@ -18,20 +18,8 @@ struct CustomerGesture: View {
     var mood: String
     var time: Double
     var body: some View {
-        let wave = sin(time * 8)
-        ZStack(alignment:.topTrailing) {
-            Cutout(index:index,speaking:mood == "talk")
-                .rotationEffect(.degrees(mood == "unsure" ? wave * 3 : (mood == "waiting" ? sin(time * 2) : 0)),anchor:.bottom)
-            if mood != "idle" {
-                Capsule().fill(palette[index % 6]).frame(width:12,height:30)
-                    .overlay(alignment:.top) { Circle().fill(Color(red:0.85,green:0.65,blue:0.48)).frame(width:13,height:13) }
-                    .overlay { if mood == "waiting" { Circle().fill(gold).frame(width:9,height:9).overlay { Rectangle().fill(ink).frame(width:1,height:4) }.offset(y:-5) } }
-                    .rotationEffect(.degrees(mood == "happy" || mood == "talk" ? -28 + wave * 18 : -65 + wave * 6),anchor:.bottom)
-                    .offset(x:-3,y:mood == "waiting" ? 65 : 35)
-                Text(mood == "happy" ? "♥" : (mood == "unsure" ? "?" : (mood == "waiting" ? "◷" : "♪")))
-                    .font(.system(size:16,weight:.black)).foregroundStyle(gold).offset(x:4,y:-5)
-            }
-        }.frame(width:80,height:130)
+        Cutout(index:index,speaking:mood == "talk",gesture:mood,gesturePhase:time)
+            .frame(width:80,height:130)
     }
 }
 

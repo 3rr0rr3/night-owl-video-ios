@@ -39,12 +39,27 @@ source += r'''
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--life") {
+            if ProcessInfo.processInfo.arguments.contains("--gestures") {
+                VStack(spacing:20) {
+                    Text("FRANK · CONNECTED GESTURES").font(.headline).foregroundStyle(mint)
+                    Text("Matching sleeves · two arms · wristwatch").font(.caption).foregroundStyle(gold)
+                    LifeClock { time in
+                        LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible())],spacing:24) {
+                            ForEach(["idle","waiting","talk","happy"],id:\.self) { mood in
+                                VStack(spacing:8) {
+                                    CustomerGesture(index:5,mood:mood,time:time).scaleEffect(1.5).frame(width:130,height:200)
+                                    Text(mood.uppercased()).font(.caption.bold()).foregroundStyle(mint)
+                                }
+                            }
+                        }
+                    }
+                }.padding(20).frame(maxWidth:.infinity,maxHeight:.infinity).background(ink).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--life") {
                 ScrollView {
                     VStack(spacing:12) {
                         Text("NIGHT OWL · LIVING SHOP").font(.headline).foregroundStyle(mint)
                         ShopArt(); BrowsingScene()
-                        LifeClock { time in HStack { CustomerGesture(index:6,mood:"talk",time:time); CustomerGesture(index:7,mood:"waiting",time:time); CustomerGesture(index:8,mood:"happy",time:time) } }
+                        LifeClock { time in HStack { CustomerGesture(index:6,mood:"talk",time:time); CustomerGesture(index:5,mood:"waiting",time:time); CustomerGesture(index:5,mood:"happy",time:time) } }
                         ShopActionScene(); CelebrationBanner()
                     }.padding(14)
                 }.background(ink).environmentObject(store).preferredColorScheme(.dark)

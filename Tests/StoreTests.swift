@@ -238,6 +238,16 @@ import Foundation
         library.s.money = 333; library.cinema.largeText = true; library.save(); library.switchSlot(1); library.switchSlot(0)
         assert(library.s.money == 333 && library.cinema.largeText)
         print("PASS: 30-film migration and metadata, rental notebook, equipment effects, seven-customer queue, fast rewind, optional surprises, validated backup round-trip and legacy import")
+        for gesture in ["waiting","happy","unsure","talk"] {
+            for sample in 0..<100 {
+                let arm = CustomerArmPose(gesture:gesture,time:Double(sample) / 10)
+                assert(arm.shoulder == CGPoint(x:19,y:63))
+                assert((3...36).contains(arm.wrist.x) && (34...88).contains(arm.wrist.y))
+                assert(hypot(arm.elbow.x-arm.shoulder.x,arm.elbow.y-arm.shoulder.y) < 26)
+                assert(hypot(arm.wrist.x-arm.elbow.x,arm.wrist.y-arm.elbow.y) < 29)
+            }
+        }
+        print("PASS: customer gestures stay attached to the shoulder with bounded elbows and wrists")
         let laneWidth = 360.0
         assert(CustomerWalking.position(stage:.arriving,elapsed:0,width:laneWidth) > laneWidth + 40)
         assert(abs(CustomerWalking.position(stage:.arriving,elapsed:CustomerWalking.arrival,width:laneWidth) - laneWidth * 0.83) < 0.001)

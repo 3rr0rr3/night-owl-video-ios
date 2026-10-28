@@ -157,25 +157,19 @@ struct SellingScene: View {
     private func walkingCustomer(_ person: CounterCustomer,time:Double,idle:Double) -> some View {
         let walking = !reduceMotion && (walkStage == .arriving || walkStage == .leaving)
         return VStack(spacing:0) {
-            Text(walkStage == .handoff ? "THANK YOU!" : (walkStage == .waiting && idle > 12 ? "TAKE YOUR TIME…" : person.name.uppercased())).font(.system(size:8,weight:.heavy)).foregroundStyle(gold)
+            Text(walkStage == .handoff ? "THANK YOU!" : person.name.uppercased()).font(.system(size:8,weight:.heavy)).foregroundStyle(gold)
             Group {
-                if walking { Cutout(index:person.index,walkingPhase:time) }
+                if walking { Cutout(index:person.index,walkingPhase:time,gesture:walkStage == .leaving && person.movie != nil ? "happy" : "idle",gesturePhase:time) }
                 else { CustomerGesture(index:person.index,mood:walkStage == .handoff ? "happy" : (game.unsureGuest == person.id ? "unsure" : (game.speakingGuest == person.id ? "talk" : (idle > 12 ? "waiting" : "idle"))),time:reduceMotion ? 0 : time) }
             }
                 .rotationEffect(.degrees(walking ? sin(time * 13) * 1.4 : 0))
                 .offset(y:walking ? -abs(sin(time * 13)) * 2 : 0)
                 .overlay(alignment:.trailing) {
                     if walkStage == .leaving, let id = person.movie, game.s.movies.indices.contains(id) {
-                        VHSCover(movie:game.s.movies[id]).frame(width:23,height:31).rotationEffect(.degrees(10)).offset(x:-3,y:20)
+                        VHSCover(movie:game.s.movies[id]).frame(width:19,height:27).rotationEffect(.degrees(6)).offset(x:-1,y:37)
                     }
                 }
-                .overlay(alignment:.leading) {
-                    if walkStage == .leaving && person.movie != nil {
-                        Capsule().fill(palette[person.index % 6]).frame(width:11,height:29)
-                            .overlay(alignment:.top) { Circle().fill(Color(red:0.85,green:0.65,blue:0.48)).frame(width:12,height:12) }
-                            .rotationEffect(.degrees(-25 + (reduceMotion ? 0 : sin(time * 9) * 18)),anchor:.bottom).offset(x:7,y:-22)
-                    }
-                }
+
         }.frame(width:80,height:150)
     }
     private func status(_ cue:DeskEvent?) -> String {

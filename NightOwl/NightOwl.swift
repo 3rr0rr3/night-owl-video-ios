@@ -14,6 +14,8 @@ struct Cutout: View {
     var index: Int
     var speaking = false
     var walkingPhase: Double? = nil
+    var gesture = "idle"
+    var gesturePhase: Double? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
@@ -22,7 +24,7 @@ struct Cutout: View {
         let phase = (time + Double(index) * 0.71).truncatingRemainder(dividingBy: 4.7)
         let blink = !reduceMotion && phase > 4.53
         Canvas { context, _ in
-            var painter = context
+            let painter = context
             let v = index % 6
             let extra = index >= 6
             let skin = [Color(red: 0.89, green: 0.68, blue: 0.49), Color(red: 0.64, green: 0.41, blue: 0.28), Color(red: 0.95, green: 0.74, blue: 0.63)][v % 3]
@@ -58,11 +60,13 @@ struct Cutout: View {
             }
             if (v == 2 || v == 4) && !(extra && v == 2) { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
             draw(Path(roundedRect: CGRect(x: 33, y: 43, width: 14, height: 19), cornerRadius: 3), skin)
+            let gesturing = gesture != "idle"
             let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
-            draw(torso, shirt, width: 1.8)
-            draw(Path(roundedRect: CGRect(x: 10, y: 92, width: 8, height: 13), cornerRadius: 3), skin)
+            let sleevelessLeft = polygon([CGPoint(x:31,y:54),CGPoint(x:19,y:60),CGPoint(x:20,y:98),CGPoint(x:60,y:98),CGPoint(x:60,y:77),CGPoint(x:62,y:94),CGPoint(x:71,y:93),CGPoint(x:73,y:68),CGPoint(x:64,y:59),CGPoint(x:49,y:54),CGPoint(x:40,y:60)])
+            draw(gesturing ? sleevelessLeft : torso, shirt, width: 1.8)
+            if !gesturing { draw(Path(roundedRect: CGRect(x: 10, y: 92, width: 8, height: 13), cornerRadius: 3), skin) }
             draw(Path(roundedRect: CGRect(x: 63, y: 92 + (speaking ? CGFloat(sin(time * 6)) * 1.5 : 0), width: 8, height: 13), cornerRadius: 3), skin)
-            line([CGPoint(x: 15,y: 73),CGPoint(x: 14,y: 91)], ink.opacity(0.5))
+            if !gesturing { line([CGPoint(x: 15,y: 73),CGPoint(x: 14,y: 91)], ink.opacity(0.5)) }
             line([CGPoint(x: 66,y: 73),CGPoint(x: 67,y: 91)], ink.opacity(0.5))
             if v == 1 || v == 4 {
                 draw(polygon([CGPoint(x: 32,y: 55),CGPoint(x: 40,y: 61),CGPoint(x: 48,y: 55),CGPoint(x: 45,y: 94),CGPoint(x: 35,y: 94)]), Color(red: 0.91, green: 0.87, blue: 0.78), width: 0.6)
@@ -103,6 +107,19 @@ struct Cutout: View {
                 line([CGPoint(x: 29,y: 57),CGPoint(x: 32,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
                 line([CGPoint(x: 51,y: 57),CGPoint(x: 48,y: 73)], Color(red: 0.23,green: 0.33,blue: 0.45), width: 4)
                 draw(oval(30,70,3,3), gold, width: 0.3); draw(oval(47,70,3,3), gold, width: 0.3)
+            }
+            if gesturing {
+                let arm = CustomerArmPose(gesture:gesture,time:reduceMotion ? 0 : (gesturePhase ?? time))
+                // Replace the original left arm, using this customer's own colors.
+                line([arm.shoulder,arm.elbow],ink,width:11)
+                line([arm.shoulder,arm.elbow],shirt,width:8)
+                line([arm.elbow,arm.wrist],ink,width:9)
+                line([arm.elbow,arm.wrist],shirt,width:6.5)
+                draw(oval(arm.wrist.x-3.8,arm.wrist.y-3.8,7.6,7.6),skin,width:1)
+                if gesture == "waiting" {
+                    draw(oval(arm.wrist.x-9,arm.wrist.y-3,5.5,5.5),gold,width:0.7)
+                    line([CGPoint(x:arm.wrist.x-6,y:arm.wrist.y-2),CGPoint(x:arm.wrist.x-6,y:arm.wrist.y)],ink,width:0.7)
+                }
             }
             // Adult facial details remain on the larger chibi portrait head.
             draw(oval(18, 25, 7, 12), skin)

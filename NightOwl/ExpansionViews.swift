@@ -15,47 +15,65 @@ struct ForecastCard: View {
 
 struct CheckoutPanel: View {
     @EnvironmentObject var game: Store
+    @Environment(\.dynamicTypeSize) private var textSize
     var body: some View {
-        VStack(alignment:.leading,spacing:14) {
-            Text("RENTAL CHECKOUT").font(.caption.bold()).foregroundStyle(mint)
+        VStack(alignment:.leading,spacing:12) {
             if let guest = game.s.guests.first {
-                Text(guest.name).font(.title2.bold())
-                Text(game.guiding ? game.request(guest) : game.recommendationHint(guest)).font(.subheadline).fixedSize(horizontal:false,vertical:true)
+                HStack { Text(guest.name).font(.title2.bold()); Spacer(); Text("\(game.s.guests.count) in line").font(.caption).foregroundStyle(.secondary) }
                 if let id = guest.movie, game.s.movies.indices.contains(id) {
-                    HStack(alignment:.top,spacing:16) {
-                        VHSCover(movie:game.s.movies[id]).frame(width:72,height:100)
-                        VStack(alignment:.leading,spacing:6) {
+                    HStack(alignment:.top,spacing:12) {
+                        VHSCover(movie:game.s.movies[id]).frame(width:52,height:72)
+                        VStack(alignment:.leading,spacing:5) {
                             Text(game.s.movies[id].title).font(.headline)
-                            Text("\(guest.snack ? "Movie $4 + popcorn $3" : "Movie rental · two nights")").font(.caption)
-                            Text("TOTAL $\(game.price)").font(.title3.bold()).foregroundStyle(gold)
-                            Text(guest.paid ? "Paid $10 · change due $\(10-game.price)" : "Payment: not received").font(.caption)
-                            if !game.guiding && game.thoughtfulMatch(game.s.movies[id],guest) { Label("Thoughtful match · extra friendship",systemImage:"heart.fill").font(.caption2).foregroundStyle(mint) }
+                            Text("Total $\(game.price)\(guest.snack ? " · includes popcorn" : " · two nights")").font(.subheadline.bold()).foregroundStyle(gold)
+                            Text(guest.paid ? "Paid $10 · change due $\(10-game.price)" : "Payment not received").font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    Text(guest.paid ? "STEP 3 OF 3 · CHANGE & HANDOFF" : (guest.scanned ? "STEP 2 OF 3 · PAYMENT" : "STEP 1 OF 3 · SCAN")).font(.caption2.bold()).foregroundStyle(.secondary)
+                    Text(guest.paid ? "3 OF 3 · CHANGE & HANDOFF" : (guest.scanned ? "2 OF 3 · PAYMENT" : "1 OF 3 · SCAN")).font(.caption2.bold()).foregroundStyle(mint)
+                } else {
+                    Text(game.guiding ? game.request(guest) : game.recommendationHint(guest)).font(.subheadline).fixedSize(horizontal:false,vertical:true)
                 }
                 if guest.paid {
-                    Text("Change counted: $\(game.change) / $\(10-game.price)").font(.headline)
-                    if !game.experience.autoChange {
-                        HStack { Button("+$1") { game.change += 1 }; Button("+$5") { game.change += 5 }; Button("Reset") { game.change = 0 } }.buttonStyle(.bordered).tint(mint)
+                    Text("Change counted: $\(game.change) of $\(10-game.price)").font(.subheadline.bold()).foregroundStyle(game.change == 10-game.price ? mint : gold)
+                    if !game.experience.autoChange { changeControls }
+                    if game.change != 10-game.price {
+                        Text(game.change < 10-game.price ? "Add $\(10-game.price-game.change) more change." : "Remove $\(game.change-(10-game.price)) or reset.").font(.caption).foregroundStyle(gold)
                     }
                 }
                 Button { advance(guest) } label: {
                     Label(nextTitle(guest),systemImage:guest.movie == nil ? "rectangle.stack" : (guest.paid ? "checkmark.circle.fill" : (guest.scanned ? "banknote" : "barcode.viewfinder")))
                         .font(.headline).frame(maxWidth:.infinity,minHeight:54).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
-                }.disabled(game.counterWalking || game.moviePickup != nil)
+                }.disabled(game.counterWalking || game.moviePickup != nil || (guest.paid && game.change != 10-game.price)).opacity(guest.paid && game.change != 10-game.price ? 0.5 : 1)
                 HStack {
-                    Button("Talk to \(guest.name)") { game.talk() }
+                    Button("Talk to \(guest.name)") { game.talk() }.frame(minHeight:44)
                     Spacer()
-                    if guest.movie == nil && !game.guiding { Button("Reserve instead") { game.reserve() } }
-                }.font(.caption).tint(gold).frame(minHeight:44)
+                    if guest.movie == nil && !game.guiding { Button("Reserve instead") { game.reserve() }.frame(minHeight:44) }
+                }.font(.subheadline).tint(gold)
+                if guest.movie != nil {
+                    DisclosureGroup("Customer request & match") {
+                        Text(game.recommendationHint(guest)).font(.subheadline).padding(.top,8)
+                        if let id = guest.movie, game.thoughtfulMatch(game.s.movies[id],guest) { Label("Thoughtful match · extra friendship",systemImage:"heart.fill").font(.caption).foregroundStyle(mint) }
+                    }.tint(mint)
+                }
             } else {
-                ForecastCard()
-                Text(game.s.open ? "No customer is waiting. Handle returns or visit Town." : "Check your forecast, then open the shop when ready.").font(.subheadline)
+                Text(game.s.open ? "Ready for the next customer" : "Ready to open?").font(.title2.bold())
+                Text(game.s.open ? "Invite a customer, handle returns or explore More." : "Check the forecast and open the doors when you’re ready.").font(.subheadline).foregroundStyle(.secondary)
                 Button(game.s.open ? "Invite next customer" : "Open the store") { if game.s.open { game.addGuest(); game.save() } else { game.doors() } }
                     .font(.headline).frame(maxWidth:.infinity,minHeight:54).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
+                ForecastCard()
             }
         }
+    }
+    private var changeControls: some View {
+        LazyVGrid(columns:Array(repeating:GridItem(.flexible(),spacing:8),count:textSize >= .xxxLarge ? 2 : 4),spacing:8) {
+            changeButton("−$1",enabled:game.change > 0) { game.change = max(0,game.change-1) }
+            changeButton("+$1") { game.change += 1 }
+            changeButton("+$5") { game.change += 5 }
+            changeButton("Reset") { game.change = 0 }
+        }
+    }
+    private func changeButton(_ title: String,enabled: Bool = true,action: @escaping () -> Void) -> some View {
+        Button(action:action) { Text(title).font(.subheadline.bold()).lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth:.infinity,minHeight:44).foregroundStyle(mint).background(mint.opacity(0.12),in:RoundedRectangle(cornerRadius:10)) }.disabled(!enabled).opacity(enabled ? 1 : 0.4)
     }
     private func nextTitle(_ guest: Guest) -> String {
         if game.counterWalking { return "Customer is approaching…" }

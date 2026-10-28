@@ -90,3 +90,9 @@ Town adds a persistent nine-square floor plan (tap to swap four fixtures), staff
 The checkout groups the customer, selected film, total, change and one primary next-step button. Manual change remains available. Film credits and runtimes support mood/actor/short-film requests with several valid answers and extra friendship for a thoughtful match. The tutorial still uses exact genres. Forecasts highlight seasonal/event demand and low stock before opening.
 
 Existing saves and older exported backups load with default expansion state. New exports, save slots and imports carry the expansion; imports validate its layout, film IDs, staff jobs, goals and offer bounds. New Game resets only the active shop. Town activities use shop currency and fictional films/credits.
+
+## Version 4.1 — easier navigation and desk tasks
+
+A permanent Counter / Returns / Films / More bottom bar replaces the buried station grid. A compact day/time/cash header stays visible, and desk scenes can be hidden for more control space. More links to shop management, Town, Story and the customer notebook. Shop management separates Daily, Stock, Style and Settings; closing the day explains pending work and confirms the bill/advance action.
+
+Returns presents one next-step button and four progress indicators. Film browsing starts with matching choices, offers clear/reset controls and puts the browsing animation in an optional disclosure. Checkout adds a one-dollar subtraction control and explains missing/excess change before enabling the final rental. New feedback expands on tap. Large text, Reduce Motion, original character art and save formats are retained.

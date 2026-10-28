@@ -22,19 +22,33 @@ struct FilmBrowser: View {
     @State private var genre = "ALL"
     @State private var tag = "ALL"
     @State private var available = false
+    @State private var matchesOnly = true
+    @State private var showBrowsing = false
     var filtered: [Movie] { game.s.movies.filter { movie in
         let details = FilmLibrary.details(movie)
-        return (genre == "ALL" || genre == movie.genre) && (tag == "ALL" || details.tags.contains(tag)) && (!available || movie.stock > 0) && (search.isEmpty || (movie.title + " " + details.synopsis + " " + details.tags.joined(separator:" ")).localizedCaseInsensitiveContains(search))
+        let matches = game.s.guests.first.map { $0.movie != nil || game.accepts(movie,$0) } ?? true
+        return (ordering || !matchesOnly || matches) && (genre == "ALL" || genre == movie.genre) && (tag == "ALL" || details.tags.contains(tag)) && (!available || movie.stock > 0) && (search.isEmpty || (movie.title + " " + details.synopsis + " " + details.tags.joined(separator:" ")).localizedCaseInsensitiveContains(search))
     }.sorted { $0.title < $1.title } }
     var body: some View {
         VStack(alignment:.leading,spacing:14) {
-            if !ordering { BrowsingScene() }
+            if !ordering {
+                Text("Choose a movie").font(.title2.bold())
+                if let guest = game.s.guests.first {
+                    Text("For \(guest.name): \(game.guiding ? game.request(guest) : game.recommendationHint(guest))").font(.subheadline).foregroundStyle(mint)
+                    if guest.movie == nil { Toggle("Good matches only",isOn:$matchesOnly).font(.subheadline).tint(mint).frame(minHeight:44) }
+                    else { Button("Movie selected · return to counter") { game.station = "COUNTER" }.buttonStyle(.borderedProminent).tint(mint).foregroundStyle(ink).frame(minHeight:44) }
+                } else { Text("Invite a customer at Counter to make a recommendation. You can browse the collection here.").font(.subheadline).foregroundStyle(.secondary) }
+            }
             TextField("Search title, mood or synopsis",text:$search).textFieldStyle(.roundedBorder).autocorrectionDisabled()
             HStack { Picker("Genre",selection:$genre) { Text("All genres").tag("ALL"); ForEach(FilmLibrary.genres,id:\.self) { Text($0.capitalized).tag($0) } }; Picker("Mood",selection:$tag) { Text("All moods").tag("ALL"); ForEach(["adventure","chaotic","city","cozy","funny","gentle","mystery","nostalgic","rescue","space","spooky","strange","sweet","thrilling"],id:\.self) { Text($0.capitalized).tag($0) } } }
             Toggle("In stock only",isOn:$available).font(.caption).tint(mint)
             Text("\(filtered.count) of \(game.s.movies.count) films · \(ordering ? "$\(game.orderCost) per copy" : "$4 rental")").font(.caption).foregroundStyle(.secondary)
-            if let guest = game.s.guests.first, !ordering { Text("For \(guest.name): \(game.guiding ? game.request(guest) : game.recommendationHint(guest))").font(.caption).foregroundStyle(mint) }
-            if filtered.isEmpty { Text("No matching films. Try another mood or clear the search.").font(.subheadline) }
+            if !ordering, game.s.guests.first?.movie == nil { DisclosureGroup("Watch customer browse",isExpanded:$showBrowsing) { BrowsingScene().padding(.top,8) }.tint(mint) }
+            if !search.isEmpty || genre != "ALL" || tag != "ALL" || available { Button("Reset search & filters") { search = ""; genre = "ALL"; tag = "ALL"; available = false }.tint(mint).frame(minHeight:44) }
+            if filtered.isEmpty {
+                Text("No movies match these filters.").font(.headline)
+                Button("Show all movies") { search = ""; genre = "ALL"; tag = "ALL"; available = false; matchesOnly = false }.buttonStyle(.bordered).tint(mint).frame(minHeight:44)
+            }
             LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible())],spacing:14) {
                 ForEach(filtered) { movie in
                     VStack(alignment:.leading,spacing:8) {
@@ -45,7 +59,7 @@ struct FilmBrowser: View {
                         Text("\(FilmCredits.actor(movie)) · \(FilmCredits.minutes(movie)) min").font(.caption2).foregroundStyle(.secondary)
                         if let guest = game.s.guests.first, !ordering, game.accepts(movie,guest) { Label(game.thoughtfulMatch(movie,guest) ? "Thoughtful match ♥" : "Good choice",systemImage:"checkmark.circle.fill").font(.caption2.bold()).foregroundStyle(mint) }
                         Text("\(movie.stock) on shelf").font(.caption2)
-                        Button(ordering ? "Order · $\(game.orderCost)" : "Recommend") {
+                        Button(ordering ? "Order · $\(game.orderCost)" : "Choose this movie") {
                             if ordering { game.buy(movie.id) } else { game.recommend(movie.id); if game.s.guests.first?.movie != nil { game.station = "COUNTER" } }
                         }.font(.caption.bold()).frame(maxWidth:.infinity,minHeight:44).background(mint.opacity(0.15),in:RoundedRectangle(cornerRadius:10)).foregroundStyle(mint)
                             .disabled(ordering ? game.s.money < game.orderCost : (movie.stock == 0 || game.s.guests.first == nil || game.s.guests.first?.movie != nil))

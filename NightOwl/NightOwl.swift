@@ -227,111 +227,87 @@ struct ShopArt: View {
 struct GameView: View {
     @EnvironmentObject var game: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("nightowl.show-customer-scene") private var showScene = true
     @State private var showReport = false
-    let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC", "TOWN"]
+    @State private var feedbackVisible = false
     var body: some View {
         ScrollViewReader { proxy in
-        ScrollView {
-            VStack(alignment: .leading, spacing: 17) {
-                if game.station == "COUNTER" {
-                    CheckoutPanel().disabled(game.counterWalking || game.moviePickup != nil).id("station-actions")
-                }
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) { Text("NIGHT OWL").font(.system(size: 28, weight: .black, design: .rounded)); Text("VIDEO STORE SIMULATOR").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(2).foregroundStyle(mint) }
-                    Spacer()
-                    VStack(alignment: .trailing) { Text("$\(game.s.money)").font(.title2.bold()).foregroundStyle(gold); Text("LEVEL \(game.level)").font(.caption2.bold()).foregroundStyle(.secondary) }
-                }
-                HStack { Label("DAY \(game.s.day)", systemImage: "calendar"); Spacer(); Text(game.clock); Spacer(); Text(game.s.open ? "OPEN" : "CLOSED").foregroundStyle(game.s.open ? mint : coral) }.font(.system(size: 11, weight: .bold, design: .monospaced))
-                if game.station != "COUNTER" && game.station != "RETURNS" {
-                ShopArt().overlay(alignment: .topTrailing) {
-                    if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
-                }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
-                DisclosureGroup("View your shop floor plan") { FloorPlanScene().padding(.top,10) }.tint(mint)
-                }
-                Label(game.seasonName,systemImage:game.seasonSymbol).font(.caption.bold()).foregroundStyle(gold)
-                HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
-                Text("\(game.todayEvent.title.uppercased()) · \(game.reputationName)").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
-                NextTaskCard { withAnimation { proxy.scrollTo("station-actions",anchor: .top) } }
-                Button { withAnimation { game.station = "STORY" } } label: {
-                    HStack { Image(systemName: game.storyFinished ? "star.fill" : "book.closed.fill"); Text(game.storyFinished ? "MAPLE STREET MOVIE NIGHT · SAVED" : "STORY \(game.story.chapter + 1)/7 · \(game.chapter.title)").font(.system(size: 11, weight: .bold)); Spacer(); Image(systemName: "chevron.right") }.foregroundStyle(gold)
-                }.buttonStyle(.plain)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(),spacing: 6),count: 3),spacing: 6) {
-                    ForEach(tabs,id: \.self) { tab in
-                        Button { game.station = tab; withAnimation { proxy.scrollTo("station-actions",anchor: .top) } } label: {
-                            HStack(spacing: 4) {
-                                Text(tab).font(.system(size: 10,weight: .heavy)).lineLimit(1).minimumScaleFactor(0.75)
-                                if game.badge(tab) > 0 { Text("\(game.badge(tab))").font(.system(size: 10,weight: .black)).padding(4).background(ink.opacity(0.15),in: Circle()) }
-                            }.frame(maxWidth: .infinity,minHeight: 44).background(game.station == tab ? mint : .white.opacity(0.06),in: RoundedRectangle(cornerRadius: 12)).foregroundStyle(game.station == tab ? ink : .white)
-                        }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
+            ScrollView {
+                VStack(alignment:.leading,spacing:16) {
+                    Color.clear.frame(height:1).id("station-actions")
+                    if feedbackVisible { GameFeedback() }
+                    if game.guiding { guideHint }
+                    if !["COUNTER","RETURNS","SHELVES","MORE"].contains(game.station) {
+                        Button { game.station = "MORE" } label: { Label("More activities",systemImage:"chevron.left").font(.subheadline.bold()).frame(minHeight:44) }.tint(mint)
                     }
-                }
-                Group { switch game.station { case "COUNTER": EmptyView(); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); case "TOWN": TownHub(); default: pc } }.id(game.station == "COUNTER" ? "other-actions" : "station-actions")
-                HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
-                Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
-            }.padding(20).frame(maxWidth: 650)
-        }.frame(maxWidth: .infinity).background(ink).animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: game.s.guests.map { $0.id })
-        .safeAreaInset(edge:.top,spacing:0) { if game.station == "COUNTER" || game.station == "RETURNS" { SellingScene(isReturn:game.station == "RETURNS").environmentObject(game).padding(.horizontal,12).padding(.vertical,4).background(ink) } }
-        .safeAreaInset(edge:.bottom,spacing:4) {
-            if game.lifeEvent != nil || game.celebration != nil {
-                VStack(spacing:4) { ShopActionScene(); CelebrationBanner() }.padding(.horizontal,12).padding(.bottom,4).background(ink)
+                    stationContent
+                }.padding(.horizontal,16).padding(.bottom,20).frame(maxWidth:650)
+            }.frame(maxWidth:.infinity).background(ink)
+            .safeAreaInset(edge:.top,spacing:0) {
+                VStack(spacing:0) {
+                    GameStatusBar()
+                    if game.station == "COUNTER" || game.station == "RETURNS" {
+                        HStack {
+                            Text(game.station == "COUNTER" ? "Rental counter" : "Return desk").font(.caption.bold()).foregroundStyle(mint)
+                            Spacer()
+                            Button(showScene ? "Hide scene" : "Show scene") { showScene.toggle() }.font(.caption.bold()).tint(mint).frame(minHeight:44)
+                        }.padding(.horizontal,16)
+                        if showScene { SellingScene(isReturn:game.station == "RETURNS").environmentObject(game).padding(.horizontal,12).padding(.bottom,8) }
+                    }
+                }.background(ink)
             }
+            .safeAreaInset(edge:.bottom,spacing:0) {
+                VStack(spacing:4) {
+                    if game.lifeEvent != nil || game.celebration != nil { VStack(spacing:4) { ShopActionScene(); CelebrationBanner() }.padding(.horizontal,12) }
+                    StationBar()
+                }.background(ink)
+            }
+            .onChange(of:game.station) { station in
+                feedbackVisible = false
+                if station == "RETURNS", let tape = game.s.returns.first { game.shopAction(.returnDrop,"Returned VHS drops into the bin",movie:tape.movie) }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration:0.2)) { proxy.scrollTo("station-actions",anchor:.top) }
+            }
+            .onChange(of:game.message) { _ in feedbackVisible = true }
+            .onChange(of:showScene) { visible in
+                if !visible {
+                    game.counterWalking = false; game.counterPresentedID = game.s.guests.first?.id
+                    if let pickup = game.moviePickup { game.finishPickup(pickup) }
+                }
+            }
+            .task(id:game.moviePickup?.id) {
+                if !showScene, let pickup = game.moviePickup { game.finishPickup(pickup) }
+            }
+            .sheet(isPresented:$showReport,onDismiss:{ game.dismissReport() }) { DayReportView().environmentObject(game) }
+            .onAppear { showReport = game.experience.reportPending }
+            .onChange(of:game.experience.reportPending) { pending in if pending { showReport = true } }
         }
-        .onChange(of:game.station) { station in
-            if station == "RETURNS", let tape = game.s.returns.first { game.shopAction(.returnDrop,"Returned VHS drops into the bin",movie:tape.movie) }
-            withAnimation(reduceMotion ? nil : .easeInOut(duration:0.25)) { proxy.scrollTo("station-actions",anchor:.top) }
-        }
-        .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
-        .onAppear { showReport = game.experience.reportPending }
-        .onChange(of: game.experience.reportPending) { pending in if pending { showReport = true } }
-
     }
+    @ViewBuilder private var stationContent: some View {
+        switch game.station {
+        case "COUNTER": CheckoutPanel().disabled(game.counterWalking || game.moviePickup != nil)
+        case "RETURNS": ReturnDeskPanel()
+        case "SHELVES": FilmBrowser()
+        case "STORY": StoryPanel()
+        case "TOWN": TownHub()
+        case "STORE PC": ManagementPanel(onReport:{ showReport = true })
+        case "NOTEBOOK": VStack(alignment:.leading,spacing:14) { Text("Customer notebook").font(.title2.bold()); CustomerNotebook() }
+        default: MoreStations()
+        }
+    }
+    private var guideHint: some View {
+        VStack(alignment:.leading,spacing:6) {
+            HStack { Text("FIRST CUSTOMER · \(game.tutorialStep)/5").font(.caption.bold()).foregroundStyle(mint); Spacer(); Button("Skip guide") { game.skipTutorial() }.font(.caption).tint(mint).frame(minHeight:44) }
+            Text(game.nextTask.title).font(.subheadline.bold())
+            ProgressView(value:Double(game.tutorialStep-1),total:5).tint(mint)
+        }.padding(12).background(.white.opacity(0.05),in:RoundedRectangle(cornerRadius:12))
     }
     func action(_ title: String, _ symbol: String, color: Color = mint, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button { withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { run() } } label: { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)
     }
     var counter: some View { CheckoutPanel() }
-    var returns: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            title("RETURN BIN", "\(game.s.returns.count) tapes")
-            if let t = game.s.returns.first {
-                VHSCover(movie: game.s.movies[t.movie]).frame(width: 110)
-                Text(game.s.movies[t.movie].title).font(.title3.bold()).foregroundStyle(gold)
-                Text("\(t.late ? "LATE · $2" : "ON TIME")   /   \(t.damaged ? "DAMAGED · $5" : "GOOD CONDITION")").font(.caption.bold()).foregroundStyle(coral)
-                ChoreBench()
-                RewindDeck(active: game.rewinding != nil)
-                action(t.scanned ? "Checked in ✓" : "1. Scan return", "barcode", enabled: !t.scanned) { game.process("scan") }
-                action(t.assessed ? "Fees reviewed ✓" : "2. Inspect & collect fees", "magnifyingglass", enabled: t.scanned && !t.assessed) { game.process("fee") }
-                action(t.rewound ? "Rewound ✓" : (game.rewinding != nil ? "Rewinding…" : "3. Rewind tape"), "backward.end", enabled: !t.rewound && game.rewinding == nil) { game.startRewind() }
-                action("4. Shelve / set aside reservation", "books.vertical", enabled: t.scanned && t.assessed && t.rewound) { game.process("shelve") }
-            } else { Text("All tapes checked in. Tomorrow brings more returns.").font(.subheadline).foregroundStyle(.secondary) }
-            ForEach(game.s.held, id: \.self) { i in action("Collect: \(game.s.movies[i].title)", "bookmark.fill", color: gold) { game.collectHold(i) } }
-            if !game.s.reservations.isEmpty { Text("Waiting for return: " + game.s.reservations.map { game.s.movies[$0].title }.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary) }
-        }
-    }
+    var returns: some View { ReturnDeskPanel() }
     var shelves: some View { FilmBrowser() }
-    var pc: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            title("STORE MANAGEMENT", "OWL-OS 94")
-            action("Town · layout, trading, club & newspaper", "building.2",color:gold) { game.station = "TOWN" }
-            DisclosureGroup("Customer notebook") { CustomerNotebook().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Equipment upgrades") { EquipmentPanel().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Optional surprises") { SurprisePanel().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Export / import shop") { BackupPanel().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Events, friends & rare tapes") { NeighborhoodPanel().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Hands-on chores") { ChoreBench().padding(.top,12) }.tint(mint)
-            Text("DAILY TASKS").font(.caption.bold()).foregroundStyle(gold)
-            Text("Rent movies • Recommend genres • Make change\nScan returns • Collect fees • Rewind & shelve\nTake reservations • Serve popcorn • Order stock").font(.caption).foregroundStyle(.secondary).lineSpacing(5)
-            action("Clean store · \(game.s.dirt) spills", "sparkles", color: gold) { game.clean() }
-            DisclosureGroup("Customize your shop") { StyleShop().padding(.top,12) }.tint(mint)
-            DisclosureGroup("Play options") { PlayOptions().padding(.top,12) }.tint(mint)
-            action(game.s.staff ? "Bea is hired · $15/day" : "Hire Bea · $60", "person.crop.circle.badge.plus", enabled: !game.s.staff) { game.hire() }
-            DisclosureGroup("Order films · $\(game.orderCost) per copy") { FilmBrowser(ordering:true).padding(.top,12) }.tint(mint)
-            if game.experience.report != nil { action("View last shift summary", "chart.bar.doc.horizontal",color: gold) { showReport = true } }
-            action("Close day & pay bills", "moon.zzz", color: coral,enabled: game.canCloseShift) { game.nextDay() }
-            if !game.canCloseShift { Text("Finish the queue. Your return carryover capacity is \(game.carryReturns).").font(.caption).foregroundStyle(.secondary) }
-            Text("Autosaved on this iPhone. A normal day lasts about 20 minutes; Relaxed mode doubles it. Every third day brings a rainy-day rush. Staff clean and rewind; you handle rentals and fees.").font(.caption).foregroundStyle(.secondary)
-        }
-    }
+    var pc: some View { ManagementPanel(onReport:{ showReport = true }) }
     func title(_ text: String, _ detail: String) -> some View { HStack { Text(text).font(.system(size: 13, weight: .black, design: .monospaced)); Spacer(); Text(detail).font(.caption2).foregroundStyle(.secondary) } }
 }
 

@@ -41,11 +41,38 @@ source += r'''
         s.expansion.articles = [TownArticle(day:1,title:"A new chapter for Night Owl",body:"The movie club is preparing its first double bill. Neighbors can now bring used tapes to the shop.")]
         if ProcessInfo.processInfo.arguments.contains("--gazette") { s.s.day = 15; s.syncExpansionWeek() }
         if ProcessInfo.processInfo.arguments.contains("--floorplan") { s.arrange("counter",at:4); s.arrange("snacks",at:6) }
+        let args = ProcessInfo.processInfo.arguments
+        UserDefaults.standard.set(!args.contains("--ui-compact") && !args.contains("--ui-large"),forKey:"nightowl.show-customer-scene")
+        if args.contains("--ui-more") { s.station = "MORE" }
+        if args.contains("--ui-films") { s.station = "SHELVES" }
+        if args.contains("--ui-returns") { s.station = "RETURNS" }
+        if args.contains("--ui-shop") { s.station = "STORE PC" }
+        if args.contains("--ui-checkout") || args.contains("--ui-large") {
+            s.s.guests = [Guest(name:Cast.all[6].name,genre:"COMEDY",movie:2,scanned:true,paid:true,snack:true)]
+            s.change = 3
+        }
+        if args.contains("--ui-large") { s.cinema.largeText = true }
+        if args.contains("--ui-compact") {
+            s.recommend(2)
+            let copies = s.s.movies[2].stock; let cash = s.s.money
+            Task { @MainActor in
+                for _ in 0..<40 {
+                    if s.moviePickup == nil { break }
+                    try? await Task.sleep(nanoseconds:200_000_000)
+                }
+                precondition(s.moviePickup == nil,"Hidden scene must not block checkout")
+                precondition(s.s.movies[2].stock == copies && s.s.money == cash,"Hiding presentation must preserve stock and money")
+                s.scan(); s.payment(); s.change = 3
+                print("PASS: compact scene completes pending pickup without changing stock or money; scan and payment remain available")
+            }
+        }
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--floorplan") {
+            if ProcessInfo.processInfo.arguments.contains(where:{ $0.hasPrefix("--ui-") }) {
+                FlatGameScreen(onMenu:{}).environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--floorplan") {
                 NavigationStack { ScrollView { VStack(spacing:20) { FloorPlanScene(editing:true); StaffAssignmentPanel() }.padding(20) }.background(ink).navigationTitle("Your shop layout") }.environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--usedtapes") {
                 NavigationStack { ScrollView { UsedTapeDesk().padding(20) }.background(ink).navigationTitle("Used-tape trading") }.environmentObject(store).preferredColorScheme(.dark)

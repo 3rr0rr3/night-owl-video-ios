@@ -36,10 +36,10 @@ struct StartGameView: View {
         .fullScreenCover(isPresented: $playing) { FlatGameScreen { game.save(); playing = false }.environmentObject(game).preferredColorScheme(.dark) }
         .sheet(isPresented: $showHelp) { NavigationStack { ScrollView { VStack(alignment: .leading,spacing: 20) {
             Text("Welcome to Night Owl").font(.title.bold()).foregroundStyle(mint)
-            Text("Use the Counter, Returns, Shelves, Story and Store PC tabs below the illustrated shop. Scroll down to see the actions for your selected station.")
-            Text("Tap a station tab to open its tasks. The counter handles rentals and change; the return desk handles scanning, fees and rewinding; the shelves help you choose films. The store PC orders stock, hires staff and decorates.")
+            Text("Use the always-visible bottom bar: Counter for rentals, Returns for returned tapes, Films to choose a movie, and More for shop management, Town and Story.")
+            Text("Each desk shows one main next-step button. Films can show good matches first. Shop management groups daily work, stock, styles and settings. Use Hide scene if you want more room for the controls.")
             Text("Open Story to follow the seven-chapter Maple Street story and meet your twelve adult regulars. Your shop autosaves while you play. Returning to the start screen pauses the shift.")
-            Text("Tap Menu to save and pause. New Game asks before replacing an existing save.").foregroundStyle(.secondary)
+            Text("Tap Pause to save and pause. New Game asks before replacing an existing save.").foregroundStyle(.secondary)
         }.padding(24) }.background(ink).navigationTitle("How to Play").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showHelp = false } } } } }
         .sheet(isPresented: $showSlots) { SaveSlotsView().environmentObject(game) }
         .sheet(isPresented: $showOptions) { NavigationStack { ScrollView { PlayOptions().padding(24) }.background(ink).navigationTitle("Play Options").toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showOptions = false } } } } }
@@ -63,7 +63,7 @@ struct FlatGameScreen: View {
     var body: some View {
         NavigationStack {
             GameView().environmentObject(game)
-                .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Menu") { game.save(); onMenu() }.accessibilityLabel("Save and pause game") } }
+                .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button("Pause") { game.save(); onMenu() }.accessibilityLabel("Save and pause game") } }
                 .navigationBarTitleDisplayMode(.inline)
         }
         .dynamicTypeSize(game.cinema.largeText ? .xxxLarge : systemText)

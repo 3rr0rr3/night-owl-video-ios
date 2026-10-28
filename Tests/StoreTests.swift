@@ -2,7 +2,7 @@ import Foundation
 
 @main struct StoreTests {
     @MainActor static func main() async {
-        for key in ["nightowl.cinema","nightowl.before-import.0","nightowl.neighborhood","nightowl.active-slot","nightowl.slot.0","nightowl.slot.1","nightowl.slot.2"] { UserDefaults.standard.removeObject(forKey: key) }
+        for key in ["nightowl.expansion","nightowl.cinema","nightowl.before-import.0","nightowl.neighborhood","nightowl.active-slot","nightowl.slot.0","nightowl.slot.1","nightowl.slot.2"] { UserDefaults.standard.removeObject(forKey: key) }
         UserDefaults.standard.removeObject(forKey: "nightowl.experience")
         UserDefaults.standard.removeObject(forKey: "nightowl.save")
         UserDefaults.standard.removeObject(forKey: "nightowl.story")
@@ -76,7 +76,7 @@ import Foundation
         assert(Cast.all.allSatisfy { $0.id >= 0 && $0.id < 12 })
         campaign.story.talked = [campaign.chapter.lead]
         var visitors = Set<String>()
-        for n in 0..<12 { campaign.s.guests = []; campaign.s.served = n; campaign.addGuest(); visitors.insert(campaign.s.guests[0].name); assert(campaign.s.guests[0].regular.genre == campaign.s.guests[0].genre) }
+        for n in 0..<12 { campaign.s.guests = []; campaign.s.served = n; campaign.addGuest(); visitors.insert(campaign.s.guests[0].name); assert(FilmLibrary.genres.contains(campaign.s.guests[0].genre), "Seasonal requests retain a valid genre") }
         assert(visitors.count == 12, "Every regular can visit")
         campaign.s = Save(); campaign.story = StoryProgress()
         func rent(_ i: Int, snack: Bool = false) {
@@ -299,6 +299,49 @@ import Foundation
         assert(living.lifeEvent == nil)
         living.newGame(); assert(living.lifeEvent == nil && living.celebration == nil && living.unsureGuest == nil)
         print("PASS: action-linked opening/restocking, rejected-action guards, rare discovery once, friendship milestones, transient saves and stale animation timers")
+        let growth = Store(); growth.newGame(); growth.experience.tutorialDone = true
+        growth.arrange("shelves",at:6)
+        assert(growth.expansion.layout["shelves"] == 6 && growth.expansion.layout["counter"] == 0 && Set(growth.expansion.layout.values).count == 4)
+        growth.arrange("counter",at:99); assert(growth.expansion.layout["counter"] == 0)
+        let flexible = Guest(name:Cast.all[3].name,genre:"ACTION")
+        let shortFilm = growth.s.movies.first { $0.genre != "ACTION" && FilmCredits.minutes($0) < 95 }!
+        assert(growth.accepts(shortFilm,flexible) && growth.thoughtfulMatch(shortFilm,flexible))
+        growth.experience.tutorialDone = false; assert(!growth.accepts(shortFilm,flexible)); growth.experience.tutorialDone = true
+        growth.s.staff = true; growth.assignStaff("restocking")
+        growth.s.returns = [Tape(movie:0,rewound:true,scanned:false)]
+        let safeStock = growth.s.movies[0].stock; growth.staffShift(); assert(growth.s.movies[0].stock == safeStock)
+        growth.s.returns[0].scanned = true; growth.s.returns[0].assessed = true
+        growth.staffShift(); assert(growth.s.movies[0].stock == safeStock+1 && growth.s.returns.isEmpty)
+        growth.s.dirt = 3; growth.assignStaff("cleaning"); growth.staffShift(); assert(growth.s.dirt == 2)
+        growth.s.returns = [Tape(movie:1)]; growth.assignStaff("rewinding"); growth.staffShift(); assert(growth.s.returns[0].rewound && !growth.s.returns[0].scanned)
+        growth.chooseWeekly("income"); growth.chooseWeekly("friends"); assert(growth.expansion.weeklyGoal == "income")
+        let preReward = growth.s.money; growth.claimWeekly(); assert(growth.s.money == preReward)
+        growth.expansion.weeklyMoney = 80; growth.claimWeekly(); let paidGoal = growth.s.money; growth.claimWeekly(); assert(growth.s.money == paidGoal && paidGoal == preReward+35)
+        growth.prepareUsedOffer(); let used = growth.expansion.usedOffer!; let usedStock = growth.s.movies[used.movie].stock
+        growth.offerUsed(used.fairPrice); assert(growth.s.movies[used.movie].stock == usedStock, "Inspect before buying")
+        growth.inspectUsedTape(); growth.offerUsed(used.fairPrice-2); assert(growth.expansion.usedOffer?.attempts == 1 && growth.s.movies[used.movie].stock == usedStock)
+        let dealCash = growth.s.money; growth.offerUsed(used.fairPrice); growth.offerUsed(used.fairPrice)
+        assert(growth.s.movies[used.movie].stock == usedStock+1 && growth.s.money == dealCash-used.fairPrice)
+        growth.s.returns = []; growth.s.guests = []; growth.s.money = 100; growth.expansion.clubFilms = [0,0]
+        growth.hostClub(); assert(growth.expansion.clubDay == 0)
+        growth.expansion.clubFilms = [0,2]; let clubCopies = growth.s.movies.map { $0.stock }
+        growth.hostClub(); let clubCash = growth.s.money; let clubFriends = growth.neighborhood.friendship
+        growth.hostClub(); assert(growth.s.money == clubCash && growth.neighborhood.friendship == clubFriends && growth.s.movies.map({ $0.stock }) == clubCopies && growth.expansion.clubDay == growth.s.day && !growth.s.open)
+        assert(!growth.expansion.clubResult.isEmpty && !growth.expansion.articles.isEmpty)
+        growth.s.day = 8; growth.syncExpansionWeek(); assert(growth.expansion.week == 2 && growth.expansion.weeklyGoal == nil && !growth.expansion.weeklyClaimed && growth.seasonGenre == "ACTION")
+        growth.s.day = 15; growth.syncExpansionWeek(); assert(growth.seasonGenre == "HORROR")
+        growth.s.day = 22; growth.syncExpansionWeek(); assert(growth.seasonGenre == "FAMILY")
+        growth.expansion.seasonalRentals = 2; growth.recordExpansionRental(Guest(name:Cast.all[0].name,genre:"FAMILY"),movie:5,total:4)
+        let seasonalPaid = growth.s.money; growth.recordExpansionRental(Guest(name:Cast.all[0].name,genre:"FAMILY"),movie:5,total:4); assert(growth.expansion.seasonalClaimed && growth.s.money == seasonalPaid)
+        let growthBackup = try! growth.exportShop(); let roundTrip = try! growth.validateBackup(growthBackup)
+        assert(roundTrip.expansion?.layout["shelves"] == 6 && roundTrip.expansion?.clubResult == growth.expansion.clubResult)
+        var badLayout = roundTrip; badLayout.expansion!.layout["shelves"] = 999
+        do { _ = try growth.validateBackup(try JSONEncoder().encode(badLayout)); assertionFailure("Invalid layout accepted") } catch {}
+        growth.save(); let loadedGrowth = Store(); assert(loadedGrowth.expansion.layout == growth.expansion.layout)
+        growth.switchSlot(1); assert(growth.expansion.layout["shelves"] == 0); growth.switchSlot(0); assert(growth.expansion.layout["shelves"] == 6)
+        let oldBackup = ShopSlot(shop:Save(),story:StoryProgress(),experience:Experience(),neighborhood:Neighborhood())
+        try! growth.importShop(try! JSONEncoder().encode(oldBackup)); assert(growth.expansion.layout["shelves"] == 0)
+        print("PASS: floor-plan swaps, flexible requests and tutorial guards, staff jobs, weekly rewards once, inspected used-tape negotiation, club accounting and repeat guards, four seasons, newspaper, legacy migration, expansion backup validation and save slots")
         migrated.newGame()
         assert(migrated.deskEvent == nil)
         assert(migrated.s.day == 1 && migrated.s.money == 150 && migrated.story.chapter == 0 && !migrated.s.open && migrated.s.rentals.isEmpty)

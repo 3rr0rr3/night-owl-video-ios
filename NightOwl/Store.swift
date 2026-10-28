@@ -75,6 +75,7 @@ struct ShopCelebration: Identifiable {
         Task { try? await Task.sleep(nanoseconds:4_000_000_000); if self.celebration?.id == reward.id { self.celebration = nil } }
     }
     func clearShopLife() { lifeEvent = nil; celebration = nil; unsureGuest = nil }
+    @Published var expansion = ExpansionProgress()
     @Published var cinema = CinemaProgress()
     @Published var neighborhood = Neighborhood()
     @Published var selectedSlot = 0
@@ -103,7 +104,9 @@ struct ShopCelebration: Identifiable {
         if let data = UserDefaults.standard.data(forKey: "nightowl.neighborhood"), let saved = try? JSONDecoder().decode(Neighborhood.self,from: data) { neighborhood = saved }
         selectedSlot = min(2,max(0,UserDefaults.standard.integer(forKey: "nightowl.active-slot")))
         if let data = UserDefaults.standard.data(forKey:"nightowl.cinema"), let saved = try? JSONDecoder().decode(CinemaProgress.self,from:data) { cinema = saved }
+        if let data = UserDefaults.standard.data(forKey:"nightowl.expansion"), let saved = try? JSONDecoder().decode(ExpansionProgress.self,from:data) { expansion = saved }
         expandCatalog()
+        syncExpansionWeek()
         restorePendingPickup()
     }
     var chapter: Chapter { Storybook.chapters[min(story.chapter, Storybook.chapters.count - 1)] }
@@ -171,6 +174,7 @@ struct ShopCelebration: Identifiable {
     var hasSavedGame: Bool { UserDefaults.standard.data(forKey: "nightowl.save") != nil }
     func newGame() {
         clearShopLife()
+        expansion = ExpansionProgress()
         let relaxed = experience.relaxed; let autoChange = experience.autoChange
         experience = Experience(); experience.relaxed = relaxed; experience.autoChange = autoChange; relaxedBeat = false
         let effects = neighborhood.effects; let music = neighborhood.music
@@ -189,9 +193,10 @@ struct ShopCelebration: Identifiable {
     var level: Int { 1 + s.xp / 50 }
     var clock: String { String(format: "%02d:%02d", s.minutes / 60, s.minutes % 60) }
     func save() {
+        if let data = try? JSONEncoder().encode(expansion) { UserDefaults.standard.set(data,forKey:"nightowl.expansion") }
         if let data = try? JSONEncoder().encode(cinema) { UserDefaults.standard.set(data,forKey:"nightowl.cinema") }
         if let data = try? JSONEncoder().encode(neighborhood) { UserDefaults.standard.set(data,forKey: "nightowl.neighborhood") }
-        let slot = ShopSlot(shop: s,story: story,experience: experience,neighborhood: neighborhood,cinema:cinema)
+        let slot = ShopSlot(shop: s,story: story,experience: experience,neighborhood: neighborhood,cinema:cinema,expansion:expansion)
         if let data = try? JSONEncoder().encode(slot) { UserDefaults.standard.set(data,forKey: "nightowl.slot.\(selectedSlot)") }
         if let data = try? JSONEncoder().encode(experience) { UserDefaults.standard.set(data,forKey: "nightowl.experience") }
         if let data = try? JSONEncoder().encode(s) { UserDefaults.standard.set(data, forKey: "nightowl.save") }
@@ -205,7 +210,8 @@ struct ShopCelebration: Identifiable {
         let n = needsLead ? lead : (s.served + s.guests.count + s.day * 3) % names.count
         let person = Cast.all[n]
         let requestGenre = !guiding && !needsLead && s.guests.count % 2 == 0 ? (todayEvent.genre ?? person.genre) : person.genre
-        s.guests.append(Guest(name: person.name, genre: requestGenre, snack: (s.served + s.guests.count) % 3 == 1))
+        let seasonalGenre = !guiding && !needsLead && (s.served + s.guests.count) % 3 == 0 ? seasonGenre : requestGenre
+        s.guests.append(Guest(name: person.name, genre: seasonalGenre, snack: (s.served + s.guests.count) % 3 == 1))
     }
 
     func tick() {
@@ -214,7 +220,7 @@ struct ShopCelebration: Identifiable {
         s.minutes += 1
         if s.minutes % max(8,(s.day % 3 == 0 ? 14 : 22) - neighborhood.reputation / 10) == 0 { addGuest() }
         if s.minutes % 47 == 0 { s.dirt = min(8, s.dirt + 1) }
-        if s.staff && s.minutes % 15 == 0 { if !s.returns.isEmpty { s.returns[0].rewound = true }; s.dirt = max(0, s.dirt - 1) }
+        if s.staff && s.minutes % 15 == 0 { staffShift() }
         if s.minutes >= 1200 { shopAction(.closing,"Closing time · sign flipped and lights dimmed"); s.open = false; say("Closing time. Finish the queue and returns, then close the day.") }
         save()
     }
@@ -226,7 +232,7 @@ struct ShopCelebration: Identifiable {
     func recommend(_ i: Int) {
         guard s.movies.indices.contains(i), !s.guests.isEmpty, s.guests[0].movie == nil else { return }
         guard s.movies[i].stock > 0 else { say("Out of stock. Order more on the store PC."); return }
-        guard s.movies[i].genre == s.guests[0].genre else { unsureGuest = s.guests[0].id; say("That's not the genre they asked for. Try another shelf."); return }
+        guard accepts(s.movies[i],s.guests[0]) else { unsureGuest = s.guests[0].id; say("That's not the genre they asked for. Try another shelf."); return }
         unsureGuest = nil
         s.guests[0].movie = i; moviePickup = MoviePickup(guestID:s.guests[0].id,movie:i); say("Great choice! I’ll get that tape from the back shelf.")
     }
@@ -242,6 +248,7 @@ struct ShopCelebration: Identifiable {
         let wasGuided = guiding
         experience.tutorialDone = true; experience.customers += 1
         let total = price
+        recordExpansionRental(g,movie:i,total:total)
         deskCue(.sale,"Be kind. Rewind!",amount: total,change: 10 - total)
         story.rentals += 1; if g.snack { story.snacks += 1 }; cashBurst(total)
         s.movies[i].stock -= 1; s.rentals.append(i); s.money += total; s.sales += total; s.served += 1; s.xp += 8; s.guests.removeFirst(); change = 0
@@ -292,6 +299,7 @@ struct ShopCelebration: Identifiable {
         for (n, i) in s.rentals.enumerated() { s.returns.append(Tape(movie: i, late: n % 3 == 0, damaged: n % 5 == 2)) }
         cinema.surprise = nil; cinema.surpriseDone = false
         s.rentals = []; s.day += 1; s.minutes = 600; s.open = false; s.sales = 0; s.dirt = min(8, s.dirt + 1)
+        syncExpansionWeek()
         if s.money < 0 { s.money = 25; say("A $25 emergency grant keeps your shop afloat. Day \(s.day) is ready.") } else { say("Paid $\(bills) in bills. Day \(s.day) is ready; yesterday's rentals are in the return bin.") }
     }
 }

@@ -21,6 +21,11 @@ jobs:
         with:
           name: NightOwl-character-screenshots
           path: |
+            build/floorplan.png
+            build/usedtapes.png
+            build/movieclub.png
+            build/gazette.png
+            build/forecast.png
             build/gestures.png
             build/portrait.png
             build/library.png

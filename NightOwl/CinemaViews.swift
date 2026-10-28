@@ -33,7 +33,7 @@ struct FilmBrowser: View {
             HStack { Picker("Genre",selection:$genre) { Text("All genres").tag("ALL"); ForEach(FilmLibrary.genres,id:\.self) { Text($0.capitalized).tag($0) } }; Picker("Mood",selection:$tag) { Text("All moods").tag("ALL"); ForEach(["adventure","chaotic","city","cozy","funny","gentle","mystery","nostalgic","rescue","space","spooky","strange","sweet","thrilling"],id:\.self) { Text($0.capitalized).tag($0) } } }
             Toggle("In stock only",isOn:$available).font(.caption).tint(mint)
             Text("\(filtered.count) of \(game.s.movies.count) films · \(ordering ? "$\(game.orderCost) per copy" : "$4 rental")").font(.caption).foregroundStyle(.secondary)
-            if let guest = game.s.guests.first, !ordering { Text("For \(guest.name): \(game.request(guest)) · \(guest.genre)").font(.caption).foregroundStyle(mint) }
+            if let guest = game.s.guests.first, !ordering { Text("For \(guest.name): \(game.guiding ? game.request(guest) : game.recommendationHint(guest))").font(.caption).foregroundStyle(mint) }
             if filtered.isEmpty { Text("No matching films. Try another mood or clear the search.").font(.subheadline) }
             LazyVGrid(columns:[GridItem(.flexible()),GridItem(.flexible())],spacing:14) {
                 ForEach(filtered) { movie in
@@ -42,13 +42,15 @@ struct FilmBrowser: View {
                         Text(movie.genre).font(.caption2.bold()).foregroundStyle(palette[movie.id % 6])
                         Text(FilmLibrary.details(movie).tags.joined(separator:" · ")).font(.caption2).foregroundStyle(gold)
                         Text(FilmLibrary.details(movie).synopsis).font(.caption).fixedSize(horizontal:false,vertical:true)
+                        Text("\(FilmCredits.actor(movie)) · \(FilmCredits.minutes(movie)) min").font(.caption2).foregroundStyle(.secondary)
+                        if let guest = game.s.guests.first, !ordering, game.accepts(movie,guest) { Label(game.thoughtfulMatch(movie,guest) ? "Thoughtful match ♥" : "Good choice",systemImage:"checkmark.circle.fill").font(.caption2.bold()).foregroundStyle(mint) }
                         Text("\(movie.stock) on shelf").font(.caption2)
                         Button(ordering ? "Order · $\(game.orderCost)" : "Recommend") {
                             if ordering { game.buy(movie.id) } else { game.recommend(movie.id); if game.s.guests.first?.movie != nil { game.station = "COUNTER" } }
                         }.font(.caption.bold()).frame(maxWidth:.infinity,minHeight:44).background(mint.opacity(0.15),in:RoundedRectangle(cornerRadius:10)).foregroundStyle(mint)
                             .disabled(ordering ? game.s.money < game.orderCost : (movie.stock == 0 || game.s.guests.first == nil || game.s.guests.first?.movie != nil))
                     }.padding(10).background(.white.opacity(0.04),in:RoundedRectangle(cornerRadius:12))
-                        .overlay(RoundedRectangle(cornerRadius:12).stroke(game.s.guests.first?.genre == movie.genre && !ordering ? mint : .clear,lineWidth:2))
+                        .overlay(RoundedRectangle(cornerRadius:12).stroke(game.s.guests.first.map { game.accepts(movie,$0) } == true && !ordering ? mint : .clear,lineWidth:2))
                 }
             }
         }

@@ -34,12 +34,28 @@ source += r'''
         if ProcessInfo.processInfo.arguments.contains("--summary") { s.experience.report = DayReport(day: 1,revenue: 47,bonus: 30,purchases: 12,bills: 15,customers: 8,returns: 4,grant: 0,tomorrow: "Day 2: 8 returns expected. Check stock, process returns, and continue your Story goals.") }
         s.neighborhood = Neighborhood()
         if ProcessInfo.processInfo.arguments.contains("--neighborhood") { s.neighborhood.rare = [0,1,3]; s.neighborhood.reputation = 30; s.neighborhood.friendship = ["0":3,"6":6] }
+        s.expansion = ExpansionProgress()
         s.expandCatalog()
+        s.prepareUsedOffer(); s.inspectUsedTape()
+        s.expansion.weeklyGoal = "friends"; s.expansion.weeklyFriends = 5
+        s.expansion.articles = [TownArticle(day:1,title:"A new chapter for Night Owl",body:"The movie club is preparing its first double bill. Neighbors can now bring used tapes to the shop.")]
+        if ProcessInfo.processInfo.arguments.contains("--gazette") { s.s.day = 15; s.syncExpansionWeek() }
+        if ProcessInfo.processInfo.arguments.contains("--floorplan") { s.arrange("counter",at:4); s.arrange("snacks",at:6) }
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains("--gestures") {
+            if ProcessInfo.processInfo.arguments.contains("--floorplan") {
+                NavigationStack { ScrollView { VStack(spacing:20) { FloorPlanScene(editing:true); StaffAssignmentPanel() }.padding(20) }.background(ink).navigationTitle("Your shop layout") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--usedtapes") {
+                NavigationStack { ScrollView { UsedTapeDesk().padding(20) }.background(ink).navigationTitle("Used-tape trading") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--movieclub") {
+                NavigationStack { ScrollView { MovieClubPanel().padding(20) }.background(ink).navigationTitle("Movie club") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--gazette") {
+                NavigationStack { ScrollView { TownNewspaper().padding(20) }.background(ink).navigationTitle("The Gazette") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--forecast") {
+                NavigationStack { ScrollView { VStack(spacing:20) { ForecastCard(); WeeklyProjectPanel() }.padding(20) }.background(ink).navigationTitle("Plan your week") }.environmentObject(store).preferredColorScheme(.dark)
+            } else if ProcessInfo.processInfo.arguments.contains("--gestures") {
                 VStack(spacing:20) {
                     Text("FRANK · CONNECTED GESTURES").font(.headline).foregroundStyle(mint)
                     Text("Matching sleeves · two arms · wristwatch").font(.caption).foregroundStyle(gold)

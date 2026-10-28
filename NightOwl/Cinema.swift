@@ -84,7 +84,7 @@ extension Store {
         else { s.money += 5; experience.bonus += 5; neighborhood.reputation = min(100,neighborhood.reputation + 1); say("Request solved! A grateful regular left a $5 tip.") }
     }
     func exportShop() throws -> Data {
-        try JSONEncoder().encode(ShopSlot(shop:s,story:story,experience:experience,neighborhood:neighborhood,cinema:cinema))
+        try JSONEncoder().encode(ShopSlot(shop:s,story:story,experience:experience,neighborhood:neighborhood,cinema:cinema,expansion:expansion))
     }
     func validateBackup(_ data: Data) throws -> ShopSlot {
         guard data.count <= 1_000_000 else { throw BackupError.invalid }
@@ -96,13 +96,17 @@ extension Store {
         if let cinema = slot.cinema {
             guard (0...1).contains(cinema.effectsVolume), (0...1).contains(cinema.musicVolume), cinema.upgrades.allSatisfy({ ["rewinder","bin","desk","ordering"].contains($0) }), cinema.history.values.flatMap({$0}).allSatisfy({ (0..<count).contains($0) }) else { throw BackupError.invalid }
         }
+        if let e = slot.expansion {
+            guard Set(e.layout.keys) == Set(["shelves","posters","counter","snacks"]), Set(e.layout.values).count == 4, e.layout.values.allSatisfy({ (0..<9).contains($0) }), ["balanced","cleaning","rewinding","restocking"].contains(e.staffJob), e.clubFilms.count == 2, e.clubFilms.allSatisfy({ (0..<count).contains($0) }), (0..<12).contains(e.clubHost), (1...99999).contains(e.week), [e.weeklyMoney,e.weeklyFriends,e.weeklyCollection,e.seasonalRentals,e.clubDay,e.usedDoneDay].allSatisfy({ (0...10000000).contains($0) }), e.weeklyGoal == nil || ["income","friends","collection"].contains(e.weeklyGoal!), e.articles.count <= 8 else { throw BackupError.invalid }
+            if let offer = e.usedOffer { guard (0..<count).contains(offer.movie),(0..<3).contains(offer.grade),(0...2).contains(offer.attempts),(1...99999).contains(offer.day) else { throw BackupError.invalid } }
+        }
         return slot
     }
     func importShop(_ data: Data) throws {
         let slot = try validateBackup(data)
         if let backup = try? exportShop() { UserDefaults.standard.set(backup,forKey:"nightowl.before-import.\(selectedSlot)") }
-        s = slot.shop; story = slot.story; experience = slot.experience; neighborhood = slot.neighborhood; cinema = slot.cinema ?? CinemaProgress()
-        clearShopLife(); expandCatalog(); moviePickup = nil; counterWalking = false; counterPresentedID = nil; deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; effectID = UUID(); station = "COUNTER"
+        s = slot.shop; story = slot.story; experience = slot.experience; neighborhood = slot.neighborhood; cinema = slot.cinema ?? CinemaProgress(); expansion = slot.expansion ?? ExpansionProgress()
+        clearShopLife(); expandCatalog(); syncExpansionWeek(); moviePickup = nil; counterWalking = false; counterPresentedID = nil; deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; effectID = UUID(); station = "COUNTER"
         restorePendingPickup()
         say("Backup imported into Shop \(selectedSlot + 1). Your previous shop was backed up first.")
     }

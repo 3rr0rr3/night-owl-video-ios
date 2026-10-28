@@ -19,6 +19,7 @@ struct ShopSlot: Codable {
     var experience: Experience
     var neighborhood: Neighborhood
     var cinema: CinemaProgress? = nil
+    var expansion: ExpansionProgress? = nil
 }
 struct ShopEvent {
     let title: String
@@ -38,8 +39,10 @@ extension Store {
     func bond(_ index: Int) -> Int { neighborhood.friendship[String(index),default: 0] }
     func befriend(_ index: Int) {
         let key = String(index)
+        syncExpansionWeek()
         let previous = bond(index)
         neighborhood.friendship[key] = min(6,previous + 1)
+        expansion.weeklyFriends += bond(index) - previous
         if bond(index) != previous && [3,6].contains(bond(index)) { celebrate("\(Cast.all[index].name) · \(bond(index) == 6 ? "Best friends!" : "New friendship badge!")") }
         if bond(index) >= 3 && !neighborhood.gifts.contains(index) {
             neighborhood.gifts.append(index)
@@ -48,7 +51,7 @@ extension Store {
     }
     func discoverRare(_ id: Int) {
         let edition = id % 6
-        if !neighborhood.rare.contains(edition) { neighborhood.rare.append(edition); celebrate("Rare VHS discovered · \(s.movies[edition].title)",movie:edition,rare:true) }
+        if !neighborhood.rare.contains(edition) { neighborhood.rare.append(edition); syncExpansionWeek(); expansion.weeklyCollection += 1; celebrate("Rare VHS discovered · \(s.movies[edition].title)",movie:edition,rare:true) }
     }
     func donationBox() {
         guard neighborhood.searchedDay != s.day else { say("The donation box is empty. Check again tomorrow."); return }
@@ -104,12 +107,12 @@ extension Store {
         counterWalking = false; counterPresentedID = nil
         deskEvent = nil; rewinding = nil; speakingGuest = nil; change = 0; earned = 0; station = "COUNTER"
         if let saved = slotInfo(slot) {
-            s = saved.shop; story = saved.story; experience = saved.experience; neighborhood = saved.neighborhood; cinema = saved.cinema ?? CinemaProgress(); expandCatalog()
+            s = saved.shop; story = saved.story; experience = saved.experience; neighborhood = saved.neighborhood; cinema = saved.cinema ?? CinemaProgress(); expansion = saved.expansion ?? ExpansionProgress(); expandCatalog(); syncExpansionWeek()
             restorePendingPickup()
             say("Shop \(slot + 1) loaded. Welcome back to Night Owl.")
         } else {
-            s = Save(); story = StoryProgress(); experience = Experience(); neighborhood = Neighborhood(); cinema = CinemaProgress(); expandCatalog()
-            for key in ["nightowl.save","nightowl.story","nightowl.experience","nightowl.neighborhood","nightowl.cinema"] { UserDefaults.standard.removeObject(forKey: key) }
+            s = Save(); story = StoryProgress(); experience = Experience(); neighborhood = Neighborhood(); cinema = CinemaProgress(); expansion = ExpansionProgress(); expandCatalog()
+            for key in ["nightowl.save","nightowl.story","nightowl.experience","nightowl.neighborhood","nightowl.cinema","nightowl.expansion"] { UserDefaults.standard.removeObject(forKey: key) }
             message = "Shop \(slot + 1) is empty. Start Game to open a new shop."
         }
     }

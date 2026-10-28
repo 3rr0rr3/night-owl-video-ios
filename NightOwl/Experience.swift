@@ -65,8 +65,8 @@ extension Store {
         if experience.reportPending { return TaskHint(title: "Your day is complete",detail: "Review your earnings and tomorrow’s plan.",station: "REPORT") }
         if let g = s.guests.first {
             if g.movie == nil {
-                let available = s.movies.contains { $0.genre == g.genre && $0.stock > 0 }
-                return TaskHint(title: available ? "Choose a \(g.genre.lowercased()) movie" : "Restock or reserve a movie",detail: "\(g.name) is waiting. \(available ? "Look for the highlighted genre on Shelves." : "Order a copy on Store PC, or reserve it at Counter.")",station: available ? "SHELVES" : "STORE PC")
+                let available = s.movies.contains { accepts($0,g) && $0.stock > 0 }
+                return TaskHint(title: available ? "Choose a \(g.genre.lowercased()) movie" : "Restock or reserve a movie",detail: "\(g.name) is waiting. \(available ? "Look for the highlighted good choices on Shelves." : "Order a copy on Store PC, or reserve it at Counter.")",station: available ? "SHELVES" : "STORE PC")
             }
             if !g.scanned { return TaskHint(title: "Scan the VHS",detail: "Return to Counter and scan \(g.name)’s movie.",station: "COUNTER") }
             if !g.paid { return TaskHint(title: "Collect the $10 payment",detail: "The rental total is $\(price).",station: "COUNTER") }

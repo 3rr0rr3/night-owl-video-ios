@@ -82,3 +82,11 @@ Adds shelf browsing with cover inspection, conversation gestures, relaxed waitin
 ## Version 3.2 — connected customer gestures
 
 Replaces floating sleeve overlays with articulated arms drawn inside each customer canvas. Gestures replace the original arm and use the actual shirt and skin colors. Waiting watch stays on the wrist, departure waves stay attached while walking, and carried VHS cases sit beside the other hand. Keeps customer names visible while waiting.
+
+## Version 4.0 — build your neighborhood shop
+
+Town adds a persistent nine-square floor plan (tap to swap four fixtures), staff assignments, one weekly income/friendship/collection project, inspected used-tape negotiations, after-hours double bills with regular reactions, four seven-day seasons and a newspaper reflecting completed activities. Staff restocking only shelves fully processed returns; used-tape buys add exactly one copy. Weekly and seasonal rewards, daily trades and screenings have repeat guards.
+
+The checkout groups the customer, selected film, total, change and one primary next-step button. Manual change remains available. Film credits and runtimes support mood/actor/short-film requests with several valid answers and extra friendship for a thoughtful match. The tutorial still uses exact genres. Forecasts highlight seasonal/event demand and low stock before opening.
+
+Existing saves and older exported backups load with default expansion state. New exports, save slots and imports carry the expansion; imports validate its layout, film IDs, staff jobs, goals and offer bounds. New Game resets only the active shop. Town activities use shop currency and fictional films/credits.

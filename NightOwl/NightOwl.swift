@@ -228,7 +228,7 @@ struct GameView: View {
     @EnvironmentObject var game: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showReport = false
-    let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC"]
+    let tabs = ["COUNTER", "RETURNS", "SHELVES", "STORY", "STORE PC", "TOWN"]
     var body: some View {
         ScrollViewReader { proxy in
         ScrollView {
@@ -243,7 +243,9 @@ struct GameView: View {
                 ShopArt().overlay(alignment: .topTrailing) {
                     if game.earned > 0 { Text("+$\(game.earned)").font(.title2.bold()).foregroundStyle(gold).padding(14).background(ink.opacity(0.9),in: Capsule()).padding().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 }.animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: game.earned)
+                DisclosureGroup("View your shop floor plan") { FloorPlanScene().padding(.top,10) }.tint(mint)
                 }
+                Label(game.seasonName,systemImage:game.seasonSymbol).font(.caption.bold()).foregroundStyle(gold)
                 HStack(alignment: .top, spacing: 10) { Image(systemName: "bubble.left.fill").foregroundStyle(mint); Text(game.message).font(.system(size: 13, weight: .medium)).fixedSize(horizontal: false, vertical: true) }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(.white.opacity(0.06)).clipShape(RoundedRectangle(cornerRadius: 12))
                 Text("\(game.todayEvent.title.uppercased()) · \(game.reputationName)").font(.system(size: 10,weight: .bold,design: .monospaced)).foregroundStyle(gold)
                 NextTaskCard { withAnimation { proxy.scrollTo("station-actions",anchor: .top) } }
@@ -260,7 +262,7 @@ struct GameView: View {
                         }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
                     }
                 }
-                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking || game.moviePickup != nil); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); default: pc } }.id("station-actions")
+                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking || game.moviePickup != nil); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); case "TOWN": TownHub(); default: pc } }.id("station-actions")
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
@@ -283,27 +285,7 @@ struct GameView: View {
     func action(_ title: String, _ symbol: String, color: Color = mint, enabled: Bool = true, run: @escaping () -> Void) -> some View {
         Button { withAnimation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.8)) { run() } } label: { Label(title, systemImage: symbol).font(.system(size: 14, weight: .bold)).frame(maxWidth: .infinity).padding(14).background(color.opacity(enabled ? 0.16 : 0.04)).foregroundStyle(enabled ? color : .gray).clipShape(RoundedRectangle(cornerRadius: 12)) }.disabled(!enabled)
     }
-    var counter: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            title("THE RENTAL COUNTER", "\(game.s.guests.count) in line")
-            if let g = game.s.guests.first {
-                HStack { VStack(alignment: .leading, spacing: 8) { Text(g.name).font(.title3.bold()); Text(g.regular.role).font(.caption2).foregroundStyle(mint); Text("“\(game.request(g))”").font(.subheadline); if g.snack { Label("Popcorn combo +$3", systemImage: "popcorn.fill").font(.caption).foregroundStyle(gold) } } }
-                action("Talk to \(g.name)", "bubble.left.and.bubble.right", color: gold) { game.talk() }
-                if let i = g.movie { VHSCover(movie: game.s.movies[i]).frame(width: 95); Text("▰  \(game.s.movies[i].title) • $\(game.price)").font(.headline).foregroundStyle(gold) }
-                if g.movie == nil {
-                    action("Choose a movie", "rectangle.stack") { game.station = "SHELVES" }
-                    action("Reserve a title", "bookmark", color: gold, enabled: !game.guiding) { game.reserve() }
-                } else if !g.scanned { action("Scan VHS barcode", "barcode.viewfinder") { game.scan() } }
-                else if !g.paid { action("Take $10 payment", "banknote") { game.payment() } }
-                else {
-                    Text("Change due: $\(10 - game.price) • counted: $\(game.change)").font(.subheadline.bold())
-                    if game.experience.autoChange { Label("Correct change counted automatically",systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(mint) }
-                    HStack { action("+$1", "plus") { game.change += 1 }; action("+$5", "plus") { game.change += 5 }; action("Reset", "arrow.counterclockwise", color: coral) { game.change = 0 } }
-                    action("Give change & rent", "checkmark.circle") { game.checkout() }
-                }
-            } else { Text("The counter is quiet. Work on returns, clean up, or order new tapes.").foregroundStyle(.secondary).font(.subheadline); if !game.s.open { action("Open the store", "door.left.hand.open") { game.doors() } } else { action("Invite next customer", "person.badge.plus") { game.addGuest(); game.save() } } }
-        }
-    }
+    var counter: some View { CheckoutPanel() }
     var returns: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("RETURN BIN", "\(game.s.returns.count) tapes")
@@ -326,6 +308,7 @@ struct GameView: View {
     var pc: some View {
         VStack(alignment: .leading, spacing: 12) {
             title("STORE MANAGEMENT", "OWL-OS 94")
+            action("Town · layout, trading, club & newspaper", "building.2",color:gold) { game.station = "TOWN" }
             DisclosureGroup("Customer notebook") { CustomerNotebook().padding(.top,12) }.tint(mint)
             DisclosureGroup("Equipment upgrades") { EquipmentPanel().padding(.top,12) }.tint(mint)
             DisclosureGroup("Optional surprises") { SurprisePanel().padding(.top,12) }.tint(mint)

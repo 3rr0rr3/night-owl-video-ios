@@ -59,6 +59,7 @@ struct ShopAmbience: View {
             GeometryReader { geo in
                 ZStack {
                     Image(systemName:"fanblades.fill").font(.system(size:22)).foregroundStyle(.white.opacity(0.28)).rotationEffect(.degrees(time * 45)).position(x:geo.size.width/2,y:18)
+                    Image(systemName:game.seasonSymbol).foregroundStyle(gold.opacity(0.65)).font(.system(size:13)).position(x:geo.size.width-65,y:22)
                     Text(game.s.open ? "OPEN" : "CLOSED").font(.system(size:8,weight:.black,design:.monospaced)).foregroundStyle(game.s.open ? mint : coral)
                         .shadow(color:mint.opacity(0.5),radius:3 + sin(time * 2)).position(x:geo.size.width-32,y:46)
                     RoundedRectangle(cornerRadius:3).fill(.black).frame(width:39,height:24)

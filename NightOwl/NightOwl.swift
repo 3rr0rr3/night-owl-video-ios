@@ -233,6 +233,9 @@ struct GameView: View {
         ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 17) {
+                if game.station == "COUNTER" {
+                    CheckoutPanel().disabled(game.counterWalking || game.moviePickup != nil).id("station-actions")
+                }
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 3) { Text("NIGHT OWL").font(.system(size: 28, weight: .black, design: .rounded)); Text("VIDEO STORE SIMULATOR").font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(2).foregroundStyle(mint) }
                     Spacer()
@@ -262,7 +265,7 @@ struct GameView: View {
                         }.accessibilityLabel("\(tab), \(game.badge(tab)) pending")
                     }
                 }
-                Group { switch game.station { case "COUNTER": counter.disabled(game.counterWalking || game.moviePickup != nil); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); case "TOWN": TownHub(); default: pc } }.id("station-actions")
+                Group { switch game.station { case "COUNTER": EmptyView(); case "RETURNS": returns; case "SHELVES": shelves; case "STORY": StoryPanel(); case "TOWN": TownHub(); default: pc } }.id(game.station == "COUNTER" ? "other-actions" : "station-actions")
                 HStack { Label("\(game.s.served) served", systemImage: "person.2"); Spacer(); Text("TODAY $\(game.s.sales)") }.font(.caption).foregroundStyle(.secondary)
                 Text("BE KIND. REWIND.").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(4).foregroundStyle(.white.opacity(0.25)).frame(maxWidth: .infinity).padding(.vertical, 12)
             }.padding(20).frame(maxWidth: 650)
@@ -275,6 +278,7 @@ struct GameView: View {
         }
         .onChange(of:game.station) { station in
             if station == "RETURNS", let tape = game.s.returns.first { game.shopAction(.returnDrop,"Returned VHS drops into the bin",movie:tape.movie) }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration:0.25)) { proxy.scrollTo("station-actions",anchor:.top) }
         }
         .sheet(isPresented: $showReport,onDismiss: { game.dismissReport() }) { DayReportView().environmentObject(game) }
         .onAppear { showReport = game.experience.reportPending }

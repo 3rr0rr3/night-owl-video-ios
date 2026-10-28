@@ -15,6 +15,7 @@ struct ForecastCard: View {
 
 struct CheckoutPanel: View {
     @EnvironmentObject var game: Store
+    var dockedActions = false
     @Environment(\.dynamicTypeSize) private var textSize
     var body: some View {
         VStack(alignment:.leading,spacing:12) {
@@ -40,10 +41,7 @@ struct CheckoutPanel: View {
                         Text(game.change < 10-game.price ? "Add $\(10-game.price-game.change) more change." : "Remove $\(game.change-(10-game.price)) or reset.").font(.caption).foregroundStyle(gold)
                     }
                 }
-                Button { advance(guest) } label: {
-                    Label(nextTitle(guest),systemImage:guest.movie == nil ? "rectangle.stack" : (guest.paid ? "checkmark.circle.fill" : (guest.scanned ? "banknote" : "barcode.viewfinder")))
-                        .font(.headline).frame(maxWidth:.infinity,minHeight:54).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
-                }.disabled(game.counterWalking || game.moviePickup != nil || (guest.paid && game.change != 10-game.price)).opacity(guest.paid && game.change != 10-game.price ? 0.5 : 1)
+                if !dockedActions { CheckoutActionButton() }
                 HStack {
                     Button("Talk to \(guest.name)") { game.talk() }.frame(minHeight:44)
                     Spacer()
@@ -58,8 +56,7 @@ struct CheckoutPanel: View {
             } else {
                 Text(game.s.open ? "Ready for the next customer" : "Ready to open?").font(.title2.bold())
                 Text(game.s.open ? "Invite a customer, handle returns or explore More." : "Check the forecast and open the doors when you’re ready.").font(.subheadline).foregroundStyle(.secondary)
-                Button(game.s.open ? "Invite next customer" : "Open the store") { if game.s.open { game.addGuest(); game.save() } else { game.doors() } }
-                    .font(.headline).frame(maxWidth:.infinity,minHeight:54).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
+                if !dockedActions { CheckoutActionButton() }
                 ForecastCard()
             }
         }
@@ -74,18 +71,6 @@ struct CheckoutPanel: View {
     }
     private func changeButton(_ title: String,enabled: Bool = true,action: @escaping () -> Void) -> some View {
         Button(action:action) { Text(title).font(.subheadline.bold()).lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth:.infinity,minHeight:44).foregroundStyle(mint).background(mint.opacity(0.12),in:RoundedRectangle(cornerRadius:10)) }.disabled(!enabled).opacity(enabled ? 1 : 0.4)
-    }
-    private func nextTitle(_ guest: Guest) -> String {
-        if game.counterWalking { return "Customer is approaching…" }
-        if game.moviePickup != nil { return "Getting your movie…" }
-        if guest.movie == nil { return "Choose a movie" }
-        return guest.paid ? "Give change & rent" : (guest.scanned ? "Take $10 payment" : "Scan VHS barcode")
-    }
-    private func advance(_ guest: Guest) {
-        if guest.movie == nil { game.station = "SHELVES" }
-        else if !guest.scanned { game.scan() }
-        else if !guest.paid { game.payment() }
-        else { game.checkout() }
     }
 }
 

@@ -84,6 +84,7 @@ struct MoreStations: View {
 
 struct ReturnDeskPanel: View {
     @EnvironmentObject var game: Store
+    var dockedActions = false
     var body: some View {
         VStack(alignment:.leading,spacing:14) {
             Text("Movie returns").font(.title2.bold())
@@ -101,10 +102,7 @@ struct ReturnDeskPanel: View {
                     step("Scan",done:tape.scanned); step("Fees",done:tape.assessed); step("Rewind",done:tape.rewound); step("Shelve",done:false)
                 }
                 if game.rewinding != nil { RewindDeck(active:true) }
-                Button { advance(tape) } label: {
-                    Label(nextTitle(tape),systemImage:tape.scanned && tape.assessed && tape.rewound ? "books.vertical" : "arrow.right.circle.fill")
-                        .font(.headline).frame(maxWidth:.infinity,minHeight:54).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
-                }.disabled(game.rewinding != nil)
+                if !dockedActions { ReturnActionButton() }
                 if game.rewinding != nil { Text("Wait for the reels to stop. Your next action will appear here.").font(.caption).foregroundStyle(mint) }
                 DisclosureGroup("Case repairs & hands-on tasks") { ChoreBench().padding(.top,12) }.tint(mint)
             } else {
@@ -117,13 +115,6 @@ struct ReturnDeskPanel: View {
         }
     }
     private func step(_ name: String,done: Bool) -> some View { VStack(spacing:4) { Image(systemName:done ? "checkmark.circle.fill" : "circle"); Text(name).font(.caption2) }.foregroundStyle(done ? mint : .secondary).frame(maxWidth:.infinity).padding(.vertical,8).background(.white.opacity(0.04),in:RoundedRectangle(cornerRadius:8)) }
-    private func nextTitle(_ tape: Tape) -> String {
-        if !tape.scanned { return "Scan returned tape" }
-        if !tape.assessed { let fee = (tape.late ? 2 : 0) + (tape.damaged ? 5 : 0); return fee > 0 ? "Collect $\(fee) return fees" : "Confirm no fees" }
-        if !tape.rewound { return game.rewinding == nil ? "Rewind tape" : "Rewinding…" }
-        return game.s.reservations.contains(tape.movie) ? "Set aside reserved copy" : "Put tape back on shelf"
-    }
-    private func advance(_ tape: Tape) { if !tape.scanned { game.process("scan") } else if !tape.assessed { game.process("fee") } else if !tape.rewound { game.startRewind() } else { game.process("shelve") } }
 }
 
 struct ManagementPanel: View {
@@ -169,5 +160,54 @@ struct ManagementPanel: View {
         if !game.s.guests.isEmpty { return "Serve or reserve movies for the \(game.s.guests.count) waiting customers first." }
         if game.s.returns.count > game.carryReturns { return "Process \(game.s.returns.count-game.carryReturns) more returns. Your carryover limit is \(game.carryReturns)." }
         return "The queue is clear and your return carryover limit is met. Closing advances to tomorrow."
+    }
+}
+
+struct CheckoutActionButton: View {
+    @EnvironmentObject var game: Store
+    private var wrongChange: Bool { game.s.guests.first?.paid == true && game.change != 10-game.price }
+    var body: some View {
+        Button(action:advance) {
+            Label(title,systemImage:game.s.guests.first?.paid == true ? "checkmark.circle.fill" : "arrow.right.circle.fill")
+                .font(.headline).frame(maxWidth:.infinity,minHeight:54).padding(.horizontal,8).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
+        }.disabled(game.counterWalking || game.moviePickup != nil || wrongChange).opacity(wrongChange ? 0.5 : 1)
+    }
+    private var title: String {
+        if game.counterWalking { return "Please wait for customer…" }
+        if game.moviePickup != nil { return "Getting your movie…" }
+        guard let guest = game.s.guests.first else { return game.s.open ? "Invite next customer" : "Open the store" }
+        if guest.movie == nil { return "Choose a movie" }
+        if !guest.scanned { return "Scan VHS barcode" }
+        if !guest.paid { return "Take $10 payment" }
+        return wrongChange ? "Count $\(10-game.price) change first" : "Give change & rent"
+    }
+    private func advance() {
+        guard !game.counterWalking, game.moviePickup == nil else { return }
+        guard let guest = game.s.guests.first else { if game.s.open { game.addGuest(); game.save() } else { game.doors() }; return }
+        if guest.movie == nil { game.station = "SHELVES" }
+        else if !guest.scanned { game.scan() }
+        else if !guest.paid { game.payment() }
+        else { game.checkout() }
+    }
+}
+
+struct ReturnActionButton: View {
+    @EnvironmentObject var game: Store
+    var body: some View {
+        if let tape = game.s.returns.first {
+            Button { advance(tape) } label: {
+                Label(title(tape),systemImage:"arrow.right.circle.fill").font(.headline).frame(maxWidth:.infinity,minHeight:54).padding(.horizontal,8).foregroundStyle(ink).background(mint,in:RoundedRectangle(cornerRadius:12))
+            }.disabled(game.rewinding != nil)
+        }
+    }
+    private func title(_ tape: Tape) -> String {
+        if !tape.scanned { return "Scan returned tape" }
+        if !tape.assessed { let fee = (tape.late ? 2 : 0) + (tape.damaged ? 5 : 0); return fee > 0 ? "Collect $\(fee) return fees" : "Confirm no fees" }
+        if !tape.rewound { return game.rewinding == nil ? "Rewind tape" : "Rewinding…" }
+        return game.s.reservations.contains(tape.movie) ? "Set aside reserved copy" : "Put tape back on shelf"
+    }
+    private func advance(_ tape: Tape) {
+        guard game.rewinding == nil else { return }
+        if !tape.scanned { game.process("scan") } else if !tape.assessed { game.process("fee") } else if !tape.rewound { game.startRewind() } else { game.process("shelve") }
     }
 }

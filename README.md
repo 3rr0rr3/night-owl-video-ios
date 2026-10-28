@@ -96,3 +96,5 @@ Existing saves and older exported backups load with default expansion state. New
 A permanent Counter / Returns / Films / More bottom bar replaces the buried station grid. A compact day/time/cash header stays visible, and desk scenes can be hidden for more control space. More links to shop management, Town, Story and the customer notebook. Shop management separates Daily, Stock, Style and Settings; closing the day explains pending work and confirms the bill/advance action.
 
 Returns presents one next-step button and four progress indicators. Film browsing starts with matching choices, offers clear/reset controls and puts the browsing animation in an optional disclosure. Checkout adds a one-dollar subtraction control and explains missing/excess change before enabling the final rental. New feedback expands on tap. Large text, Reduce Motion, original character art and save formats are retained.
+
+The active rental/return action stays docked above the bottom bar, so it remains reachable while the desk scene and details scroll independently.

@@ -259,6 +259,8 @@ struct GameView: View {
             .safeAreaInset(edge:.bottom,spacing:0) {
                 VStack(spacing:4) {
                     if game.lifeEvent != nil || game.celebration != nil { VStack(spacing:4) { ShopActionScene(); CelebrationBanner() }.padding(.horizontal,12) }
+                    if game.station == "COUNTER" { CheckoutActionButton().padding(.horizontal,16).padding(.top,8) }
+                    else if game.station == "RETURNS", !game.s.returns.isEmpty { ReturnActionButton().padding(.horizontal,16).padding(.top,8) }
                     StationBar()
                 }.background(ink)
             }
@@ -284,8 +286,8 @@ struct GameView: View {
     }
     @ViewBuilder private var stationContent: some View {
         switch game.station {
-        case "COUNTER": CheckoutPanel().disabled(game.counterWalking || game.moviePickup != nil)
-        case "RETURNS": ReturnDeskPanel()
+        case "COUNTER": CheckoutPanel(dockedActions:true).disabled(game.counterWalking || game.moviePickup != nil)
+        case "RETURNS": ReturnDeskPanel(dockedActions:true)
         case "SHELVES": FilmBrowser()
         case "STORY": StoryPanel()
         case "TOWN": TownHub()

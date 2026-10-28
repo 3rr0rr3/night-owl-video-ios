@@ -1,0 +1,74 @@
+name: Verify living shop
+on:
+  push:
+    branches: [inspect-living-shop-3-1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - name: Wait for game builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for run in 40624622427 40624622478; do
+            for attempt in {1..65}; do
+              state=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$run --jq '.status' 2>/dev/null || echo retry)
+              if [ "$state" = completed ]; then
+                result=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$run --jq '.conclusion')
+                test "$result" = success || exit 1
+                break
+              fi
+              sleep 20
+            done
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 40624622427
+          name: NightOwl-SideStore
+          path: ipa
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 40624622478
+          name: NightOwl-character-screenshots
+          path: previews
+      - name: Check iPhone package and emit simulator previews
+        run: |
+          python3 - <<'PY'
+          import zipfile, plistlib, struct, base64, subprocess
+          z=zipfile.ZipFile('ipa/NightOwl.ipa')
+          assert z.testzip() is None
+          root='Payload/NightOwl.app/'
+          info=plistlib.loads(z.read(root+'Info.plist'))
+          assert info['CFBundleShortVersionString']=='3.1'
+          assert info['CFBundleIcons']['CFBundlePrimaryIcon']['CFBundleIconName']=='AppIcon'
+          assert root+'Assets.car' in z.namelist()
+          assert struct.unpack_from('<I',z.read(root+'NightOwl'),4)[0]==0x100000c
+          print('PASS: IPA CRC, arm64 executable, version 3.1 and packaged app icon')
+          subprocess.run(['sips','-Z','800','previews/library.png','--out','library-small.png'],check=True)
+          print('LIBRARY_PNG:'+base64.b64encode(open('library-small.png','rb').read()).decode())
+          PY
+          cat > frames.swift <<'SWIFT'
+          import Foundation
+          import AppKit
+          import AVFoundation
+          for (file,times) in [("living-shop.mp4",[1.0,5.0,9.0,13.0,17.0,21.0,25.0]),("store-animation.mp4",[12.0,15.0])] {
+              let asset=AVURLAsset(url:URL(fileURLWithPath:"previews/"+file))
+              let gen=AVAssetImageGenerator(asset:asset)
+              gen.appliesPreferredTrackTransform=true
+              gen.maximumSize=CGSize(width:800,height:800)
+              gen.requestedTimeToleranceBefore = .zero
+              gen.requestedTimeToleranceAfter = .zero
+              for (i,t) in times.enumerated() {
+                  let frame=try gen.copyCGImage(at:CMTime(seconds:t,preferredTimescale:600),actualTime:nil)
+                  let data=NSBitmapImageRep(cgImage:frame).representation(using:.png,properties:[:])!
+                  print("FRAME_\(file)_\(i)_PNG:"+data.base64EncodedString())
+              }
+          }
+          SWIFT
+          swift frames.swift

@@ -1,5 +1,17 @@
 import SwiftUI
 
+// Render typography at its design size before shrinking the complete sleeve.
+// Otherwise minimum text sizes can force a tiny prop taller than its frame.
+struct HandheldVHS: View {
+    let movie: Movie
+    var width: CGFloat = 19
+    var body: some View {
+        VHSCover(movie:movie).frame(width:160,height:210)
+            .scaleEffect(width/160)
+            .frame(width:width,height:width*210/160).clipped()
+    }
+}
+
 struct SellingScene: View {
     @EnvironmentObject var game: Store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -51,7 +63,7 @@ struct SellingScene: View {
                         }
                         if handing { transferArm(width:width,time:walkTime) }
                         if !isReturn, game.moviePickup == nil, let guest = game.s.guests.first, let movie = guest.movie, !guest.scanned, game.s.movies.indices.contains(movie) {
-                            VHSCover(movie:game.s.movies[movie]).frame(width:24,height:32).rotationEffect(.degrees(-8)).position(x:width * 0.30,y:123)
+                            HandheldVHS(movie:game.s.movies[movie],width:24).frame(width:24,height:32).rotationEffect(.degrees(-8)).position(x:width * 0.30,y:123)
                         }
                         if !isReturn, let customer {
                             walkingCustomer(customer,time:walkTime,idle:idleTime)
@@ -60,7 +72,7 @@ struct SellingScene: View {
                         if handing, let id = customer?.movie, game.s.movies.indices.contains(id) {
                             let poseTime = reduceMotion ? ClerkHandoff.duration : walkTime
                             let point = ClerkHandoff.tape(width:Double(width),time:poseTime)
-                            VHSCover(movie:game.s.movies[id]).frame(width:19,height:27).rotationEffect(.degrees(6)).position(point)
+                            HandheldVHS(movie:game.s.movies[id]).frame(width:19,height:27).rotationEffect(.degrees(6)).position(point)
                             if poseTime < ClerkHandoff.transfer {
                                 let wrist = ClerkHandoff.arm(width:Double(width),time:poseTime).wrist
                                 Circle().fill(PlayerPalette.skin).overlay(Circle().stroke(ink,lineWidth:1)).frame(width:7,height:7).position(wrist)
@@ -126,7 +138,7 @@ struct SellingScene: View {
             PlayerPortrait(walkingPhase:walking ? (handing ? handoffTime : time) : nil,reaching:handing)
                 .overlay(alignment:.trailing) {
                     if pickupStage == .returning, let id = pickupFilm, game.s.movies.indices.contains(id) {
-                        VHSCover(movie:game.s.movies[id]).frame(width:23,height:31).rotationEffect(.degrees(-10)).offset(x:-3,y:20)
+                        HandheldVHS(movie:game.s.movies[id],width:23).frame(width:23,height:31).rotationEffect(.degrees(-10)).offset(x:-3,y:20)
                     }
                 }.scaleEffect(scale).position(x:cx,y:cy)
         }
@@ -175,11 +187,11 @@ struct SellingScene: View {
         let walking = !reduceMotion && (walkStage == .arriving || walkStage == .leaving)
         let receiving = walkStage == .handoff ? (reduceMotion ? ClerkHandoff.duration : time) : nil
         return ZStack(alignment:.topLeading) {
-            Text(walkStage == .handoff ? "THANK YOU!" : person.name.uppercased()).font(.system(size:8,weight:.heavy)).foregroundStyle(gold).frame(width:80,height:12).position(x:40,y:6)
+            Text(walkStage == .handoff ? "THANK YOU!" : person.name.uppercased()).font(.system(size:8,weight:.heavy)).foregroundStyle(gold).frame(width:80,height:12).position(x:40,y:walkStage == .handoff ? 157 : 6)
             ZStack(alignment:.topLeading) {
                 Cutout(index:person.index,speaking:game.speakingGuest == person.id,walkingPhase:walking ? time : nil,gesture:walkStage == .leaving && person.movie != nil ? "happy" : (walkStage == .waiting && idle > 12 ? "waiting" : "idle"),gesturePhase:reduceMotion ? 0 : time,receivingPhase:receiving)
                 if walkStage == .leaving, let id = person.movie, game.s.movies.indices.contains(id) {
-                    VHSCover(movie:game.s.movies[id]).frame(width:19,height:27).rotationEffect(.degrees(6)).position(x:72,y:89)
+                    HandheldVHS(movie:game.s.movies[id]).frame(width:19,height:27).rotationEffect(.degrees(6)).position(x:72,y:89)
                 }
             }.frame(width:80,height:130)
                 .rotationEffect(.degrees(walking ? sin(time*13)*1.4 : 0))

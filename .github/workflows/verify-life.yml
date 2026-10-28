@@ -1,4 +1,4 @@
-name: Verify connected gestures
+name: Verify Town expansion
 on:
   push:
     branches: [inspect-living-shop-3-1]
@@ -10,11 +10,11 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 25
     steps:
-      - name: Wait for game builds
+      - name: Wait for builds
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for run in 40627253073 40627111316; do
+          for run in 40702087734 40701750313; do
             for attempt in {1..65}; do
               state=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$run --jq '.status' 2>/dev/null || echo retry)
               if [ "$state" = completed ]; then
@@ -28,16 +28,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40627253073
+          run-id: 40702087734
           name: NightOwl-SideStore
           path: ipa
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40627111316
+          run-id: 40701750313
           name: NightOwl-character-screenshots
           path: previews
-      - name: Check iPhone package and render gestures
+      - name: Verify IPA and render Town previews
         run: |
           python3 - <<'PY'
           import zipfile, plistlib, struct, base64, subprocess
@@ -45,28 +45,13 @@ jobs:
           assert z.testzip() is None
           root='Payload/NightOwl.app/'
           info=plistlib.loads(z.read(root+'Info.plist'))
-          assert info['CFBundleShortVersionString']=='3.2'
+          assert info['CFBundleShortVersionString']=='4.0'
+          assert info['CFBundleVersion']=='18'
           assert info['CFBundleIcons']['CFBundlePrimaryIcon']['CFBundleIconName']=='AppIcon'
           assert root+'Assets.car' in z.namelist()
           assert struct.unpack_from('<I',z.read(root+'NightOwl'),4)[0]==0x100000c
-          print('PASS: IPA CRC, arm64 executable, version 3.2 and packaged app icon')
-          subprocess.run(['sips','-Z','800','previews/gestures.png','--out','gestures-small.png'],check=True)
-          print('GESTURES_PNG:'+base64.b64encode(open('gestures-small.png','rb').read()).decode())
+          print('PASS: IPA CRC, arm64 executable, version 4.0 build 18 and app icon')
+          for name in ['floorplan','usedtapes','movieclub','gazette','forecast','world','library']:
+              subprocess.run(['sips','-Z','900','previews/'+name+'.png','--out',name+'-small.png'],check=True)
+              print(name.upper()+'_PNG:'+base64.b64encode(open(name+'-small.png','rb').read()).decode())
           PY
-          cat > frames.swift <<'SWIFT'
-          import Foundation
-          import AppKit
-          import AVFoundation
-          let asset=AVURLAsset(url:URL(fileURLWithPath:"previews/living-shop.mp4"))
-          let gen=AVAssetImageGenerator(asset:asset)
-          gen.appliesPreferredTrackTransform=true
-          gen.maximumSize=CGSize(width:800,height:800)
-          gen.requestedTimeToleranceBefore = .zero
-          gen.requestedTimeToleranceAfter = .zero
-          for (i,t) in [1.0,1.5,2.0,2.5].enumerated() {
-              let frame=try gen.copyCGImage(at:CMTime(seconds:t,preferredTimescale:600),actualTime:nil)
-              let data=NSBitmapImageRep(cgImage:frame).representation(using:.png,properties:[:])!
-              print("FRAME_\(i)_PNG:"+data.base64EncodedString())
-          }
-          SWIFT
-          swift frames.swift

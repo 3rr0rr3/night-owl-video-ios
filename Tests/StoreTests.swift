@@ -241,7 +241,7 @@ import Foundation
         for gesture in ["waiting","happy","unsure","talk"] {
             for sample in 0..<100 {
                 let arm = CustomerArmPose(gesture:gesture,time:Double(sample) / 10)
-                assert(arm.shoulder == CGPoint(x:19,y:63))
+                assert(arm.shoulder.x == 19 && arm.shoulder.y == 63)
                 assert((3...36).contains(arm.wrist.x) && (34...88).contains(arm.wrist.y))
                 assert(hypot(arm.elbow.x-arm.shoulder.x,arm.elbow.y-arm.shoulder.y) < 26)
                 assert(hypot(arm.wrist.x-arm.elbow.x,arm.wrist.y-arm.elbow.y) < 29)

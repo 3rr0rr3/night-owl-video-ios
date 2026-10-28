@@ -5,6 +5,7 @@ struct LifeClock<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduced
     @Environment(\.scenePhase) private var phase
     var content: (Double) -> Content
+    init(@ViewBuilder content: @escaping (Double) -> Content) { self.content = content }
     var body: some View {
         TimelineView(.animation(minimumInterval:1.0/20,paused:reduced || phase != .active)) { tick in
             content(reduced ? 0 : tick.date.timeIntervalSinceReferenceDate)

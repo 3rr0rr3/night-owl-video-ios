@@ -53,7 +53,7 @@ struct SellingScene: View {
                             Capsule().fill(PlayerPalette.shirt).frame(width:width * 0.23,height:14)
                                 .overlay(alignment:.trailing) { Circle().fill(PlayerPalette.skin).frame(width:16,height:16) }
                                 .position(x:width * (0.52 + progress * 0.12),y:117)
-                            HStack(spacing:2) { ForEach(0..<min(6,cue.change)) { _ in Circle().fill(gold).frame(width:8,height:8) } }
+                            HStack(spacing:2) { ForEach(0..<min(6,cue.change),id:\.self) { _ in Circle().fill(gold).frame(width:8,height:8) } }
                                 .position(x:width * (reduceMotion ? 0.83 : 0.59 + progress * 0.24),y:145)
                             if let id = cue.movieID, game.s.movies.indices.contains(id) {
                                 VHSCover(movie:game.s.movies[id]).frame(width:32,height:42).rotationEffect(.degrees(8)).position(x:width * (reduceMotion ? 0.88 : 0.72 + progress * 0.16),y:118)

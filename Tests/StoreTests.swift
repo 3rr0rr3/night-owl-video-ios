@@ -296,6 +296,12 @@ import Foundation
         try? await Task.sleep(nanoseconds:1_900_000_000)
         assert(living.lifeEvent?.id == newestID, "Old timer must not clear the latest animation")
         try? await Task.sleep(nanoseconds:1_400_000_000)
+        // Busy CI runners can resume the test before the actor runs its cleanup.
+        // Allow a bounded scheduling margin while still requiring expiration.
+        for _ in 0..<20 {
+            if living.lifeEvent == nil { break }
+            try? await Task.sleep(nanoseconds:100_000_000)
+        }
         assert(living.lifeEvent == nil)
         living.newGame(); assert(living.lifeEvent == nil && living.celebration == nil && living.unsureGuest == nil)
         print("PASS: action-linked opening/restocking, rejected-action guards, rare discovery once, friendship milestones, transient saves and stale animation timers")

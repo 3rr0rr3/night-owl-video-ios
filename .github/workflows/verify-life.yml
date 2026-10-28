@@ -14,7 +14,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for run in 40702087734 40701750313; do
+          for run in 40704285947 40704286027; do
             for attempt in {1..65}; do
               state=$(gh api repos/3rr0rr3/night-owl-video-ios/actions/runs/$run --jq '.status' 2>/dev/null || echo retry)
               if [ "$state" = completed ]; then
@@ -28,13 +28,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40702087734
+          run-id: 40704285947
           name: NightOwl-SideStore
           path: ipa
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
-          run-id: 40701750313
+          run-id: 40704286027
           name: NightOwl-character-screenshots
           path: previews
       - name: Verify IPA and render Town previews

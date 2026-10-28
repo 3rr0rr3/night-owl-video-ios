@@ -55,6 +55,7 @@ jobs:
             build/rental-receipt.png
             build/living-shop.mp4
             build/living-shop.png
+            build/connected-handoff.mp4
             build/store-animation.mp4
             build/characters-in-store.png
           if-no-files-found: error

@@ -16,6 +16,7 @@ struct Cutout: View {
     var walkingPhase: Double? = nil
     var gesture = "idle"
     var gesturePhase: Double? = nil
+    var receivingPhase: Double? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
@@ -61,13 +62,13 @@ struct Cutout: View {
             if (v == 2 || v == 4) && !(extra && v == 2) { draw(Path(roundedRect: CGRect(x: 19, y: 10, width: 43, height: 50), cornerRadius: 15), hair) }
             draw(Path(roundedRect: CGRect(x: 33, y: 43, width: 14, height: 19), cornerRadius: 3), skin)
             let gesturing = gesture != "idle"
-            let torso = polygon([CGPoint(x: 31,y: 54),CGPoint(x: 16,y: 59),CGPoint(x: 8,y: 68),CGPoint(x: 10,y: 93),CGPoint(x: 19,y: 94),CGPoint(x: 20,y: 77),CGPoint(x: 20,y: 98),CGPoint(x: 60,y: 98),CGPoint(x: 60,y: 77),CGPoint(x: 62,y: 94),CGPoint(x: 71,y: 93),CGPoint(x: 73,y: 68),CGPoint(x: 64,y: 59),CGPoint(x: 49,y: 54),CGPoint(x: 40,y: 60)])
-            let sleevelessLeft = polygon([CGPoint(x:31,y:54),CGPoint(x:19,y:60),CGPoint(x:20,y:98),CGPoint(x:60,y:98),CGPoint(x:60,y:77),CGPoint(x:62,y:94),CGPoint(x:71,y:93),CGPoint(x:73,y:68),CGPoint(x:64,y:59),CGPoint(x:49,y:54),CGPoint(x:40,y:60)])
-            draw(gesturing ? sleevelessLeft : torso, shirt, width: 1.8)
+            let leftSide = gesturing ? [CGPoint(x:31,y:54),CGPoint(x:19,y:60),CGPoint(x:20,y:98)] : [CGPoint(x:31,y:54),CGPoint(x:16,y:59),CGPoint(x:8,y:68),CGPoint(x:10,y:93),CGPoint(x:19,y:94),CGPoint(x:20,y:77),CGPoint(x:20,y:98)]
+            let rightSide = receivingPhase != nil ? [CGPoint(x:60,y:98),CGPoint(x:60,y:64),CGPoint(x:49,y:54),CGPoint(x:40,y:60)] : [CGPoint(x:60,y:98),CGPoint(x:60,y:77),CGPoint(x:62,y:94),CGPoint(x:71,y:93),CGPoint(x:73,y:68),CGPoint(x:64,y:59),CGPoint(x:49,y:54),CGPoint(x:40,y:60)]
+            draw(polygon(leftSide+rightSide),shirt,width:1.8)
             if !gesturing { draw(Path(roundedRect: CGRect(x: 10, y: 92, width: 8, height: 13), cornerRadius: 3), skin) }
-            draw(Path(roundedRect: CGRect(x: 63, y: 92 + (speaking ? CGFloat(sin(time * 6)) * 1.5 : 0), width: 8, height: 13), cornerRadius: 3), skin)
+            if receivingPhase == nil { draw(Path(roundedRect: CGRect(x: 63, y: 92 + (speaking ? CGFloat(sin(time * 6)) * 1.5 : 0), width: 8, height: 13), cornerRadius: 3), skin) }
             if !gesturing { line([CGPoint(x: 15,y: 73),CGPoint(x: 14,y: 91)], ink.opacity(0.5)) }
-            line([CGPoint(x: 66,y: 73),CGPoint(x: 67,y: 91)], ink.opacity(0.5))
+            if receivingPhase == nil { line([CGPoint(x: 66,y: 73),CGPoint(x: 67,y: 91)], ink.opacity(0.5)) }
             if v == 1 || v == 4 {
                 draw(polygon([CGPoint(x: 32,y: 55),CGPoint(x: 40,y: 61),CGPoint(x: 48,y: 55),CGPoint(x: 45,y: 94),CGPoint(x: 35,y: 94)]), Color(red: 0.91, green: 0.87, blue: 0.78), width: 0.6)
                 line([CGPoint(x: 30,y: 56),CGPoint(x: 25,y: 70),CGPoint(x: 34,y: 73),CGPoint(x: 40,y: 95)], width: 1.3)
@@ -120,6 +121,13 @@ struct Cutout: View {
                     draw(oval(arm.wrist.x-9,arm.wrist.y-3,5.5,5.5),gold,width:0.7)
                     line([CGPoint(x:arm.wrist.x-6,y:arm.wrist.y-2),CGPoint(x:arm.wrist.x-6,y:arm.wrist.y)],ink,width:0.7)
                 }
+            }
+            if let receiving = receivingPhase {
+                let drop = CGFloat(ClerkHandoff.customerDrop(receiving))
+                let shoulder = CGPoint(x:61,y:63), elbow = CGPoint(x:70,y:78+drop*0.15), wrist = CGPoint(x:66,y:68+drop)
+                line([shoulder,elbow,wrist],ink,width:10)
+                line([shoulder,elbow,wrist],shirt,width:7)
+                draw(oval(wrist.x-3.8,wrist.y-3.8,7.6,7.6),skin,width:1)
             }
             // Adult facial details remain on the larger chibi portrait head.
             draw(oval(18, 25, 7, 12), skin)

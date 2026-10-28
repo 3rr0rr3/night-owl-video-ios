@@ -47,3 +47,12 @@ kill -INT "$LIFE_RECORDER"
 wait "$LIFE_RECORDER" || true
 xcrun simctl io "$DEVICE" screenshot build/living-shop.png
 xcrun simctl terminate "$DEVICE" com.nightowl.videostore
+
+xcrun simctl launch "$DEVICE" com.nightowl.videostore --handoff
+xcrun simctl io "$DEVICE" recordVideo --codec=h264 build/connected-handoff.mp4 &
+HANDOFF_RECORDER=$!
+sleep 9
+kill -INT "$HANDOFF_RECORDER" || true
+wait "$HANDOFF_RECORDER" || true
+xcrun simctl terminate "$DEVICE" com.nightowl.videostore
+test -s build/connected-handoff.mp4

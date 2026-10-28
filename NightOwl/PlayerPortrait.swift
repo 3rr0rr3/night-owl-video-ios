@@ -8,6 +8,7 @@ enum PlayerPalette {
 
 struct PlayerPortrait: View {
     var walkingPhase: Double? = nil
+    var reaching = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
     var body: some View {
@@ -38,9 +39,10 @@ struct PlayerPortrait: View {
                 draw(Path(roundedRect:CGRect(x:43,y:119,width:20,height:7),cornerRadius:2),ink)
                 }
                 draw(Path(roundedRect:CGRect(x:32,y:49,width:17,height:19),cornerRadius:4),skin)
-                draw(polygon([CGPoint(x:30,y:60),CGPoint(x:17,y:64),CGPoint(x:7,y:75),CGPoint(x:11,y:89),CGPoint(x:21,y:87),CGPoint(x:20,y:100),CGPoint(x:60,y:100),CGPoint(x:59,y:87),CGPoint(x:69,y:89),CGPoint(x:74,y:75),CGPoint(x:63,y:64),CGPoint(x:50,y:60),CGPoint(x:40,y:67)]),shirt,1.7)
+                let torso = reaching ? [CGPoint(x:30,y:60),CGPoint(x:17,y:64),CGPoint(x:7,y:75),CGPoint(x:11,y:89),CGPoint(x:21,y:87),CGPoint(x:20,y:100),CGPoint(x:60,y:100),CGPoint(x:60,y:73),CGPoint(x:63,y:64),CGPoint(x:50,y:60),CGPoint(x:40,y:67)] : [CGPoint(x:30,y:60),CGPoint(x:17,y:64),CGPoint(x:7,y:75),CGPoint(x:11,y:89),CGPoint(x:21,y:87),CGPoint(x:20,y:100),CGPoint(x:60,y:100),CGPoint(x:59,y:87),CGPoint(x:69,y:89),CGPoint(x:74,y:75),CGPoint(x:63,y:64),CGPoint(x:50,y:60),CGPoint(x:40,y:67)]
+                draw(polygon(torso),shirt,1.7)
                 draw(Path(roundedRect:CGRect(x:11,y:86,width:10,height:20),cornerRadius:4),skin)
-                draw(Path(roundedRect:CGRect(x:60,y:86,width:10,height:20),cornerRadius:4),skin)
+                if !reaching { draw(Path(roundedRect:CGRect(x:60,y:86,width:10,height:20),cornerRadius:4),skin) }
                 let collar = Path { p in p.move(to:CGPoint(x:29,y:61)); p.addQuadCurve(to:CGPoint(x:51,y:61),control:CGPoint(x:40,y:77)) }
                 context.stroke(collar,with:.color(ink.opacity(0.65)),lineWidth:2)
                 line([CGPoint(x:24,y:76),CGPoint(x:23,y:96)],ink.opacity(0.25),0.7)

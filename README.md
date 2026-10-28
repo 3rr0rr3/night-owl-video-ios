@@ -98,3 +98,7 @@ A permanent Counter / Returns / Films / More bottom bar replaces the buried stat
 Returns presents one next-step button and four progress indicators. Film browsing starts with matching choices, offers clear/reset controls and puts the browsing animation in an optional disclosure. Checkout adds a one-dollar subtraction control and explains missing/excess change before enabling the final rental. New feedback expands on tap. Large text, Reduce Motion, original character art and save formats are retained.
 
 The active rental/return action stays docked above the bottom bar, so it remains reachable while the desk scene and details scroll independently.
+
+## Version 4.2 — connected shopkeeper handoff
+
+After a completed payment/change transaction the shopkeeper approaches the customer behind the counter, reaches out with an arm anchored to his shoulder and passes the selected VHS into the customer’s right hand. The customer lowers the tape into the same carrying position used while leaving; the clerk retracts his arm and returns to the register. Arm colors match the personalized portrait and replace its resting right arm during the transfer. Reduced Motion and hidden-scene checkout remain available; transaction accounting is unchanged.

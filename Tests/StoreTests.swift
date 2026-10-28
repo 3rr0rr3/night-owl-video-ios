@@ -248,6 +248,21 @@ import Foundation
             }
         }
         print("PASS: customer gestures stay attached to the shoulder with bounded elbows and wrists")
+        for width in [300.0,360.0,414.0,650.0] {
+            assert(ClerkHandoff.x(width:width,time:0) == 56 && ClerkHandoff.x(width:width,time:ClerkHandoff.duration) == 56)
+            for tick in 0...240 {
+                let time = Double(tick)/100, arm = ClerkHandoff.arm(width:width,time:Double(tick)/100)
+                assert(abs(arm.shoulder.x-ClerkHandoff.x(width:width,time:time)-20) < 0.001)
+                assert(abs(arm.shoulder.y-(89-ClerkHandoff.bob(time))) < 0.001)
+                assert(arm.wrist.x.isFinite && arm.wrist.y.isFinite)
+                let tape = ClerkHandoff.tape(width:width,time:time)
+                if time < ClerkHandoff.transfer { assert(abs(tape.x-arm.wrist.x-6) < 0.001 && abs(tape.y-arm.wrist.y+9) < 0.001) }
+                else { assert(abs(tape.x-(width*0.83+32)) < 0.001) }
+            }
+        }
+        assert(ClerkHandoff.customerDrop(ClerkHandoff.transfer) == 0 && ClerkHandoff.customerDrop(ClerkHandoff.duration) == 30)
+        assert(CustomerWalking.handoff == ClerkHandoff.duration)
+        print("PASS: shopkeeper shoulder anchor, walk-and-return endpoints, tape grip before transfer, receiving-hand position and synchronized handoff duration")
         let laneWidth = 360.0
         assert(CustomerWalking.position(stage:.arriving,elapsed:0,width:laneWidth) > laneWidth + 40)
         assert(abs(CustomerWalking.position(stage:.arriving,elapsed:CustomerWalking.arrival,width:laneWidth) - laneWidth * 0.83) < 0.001)

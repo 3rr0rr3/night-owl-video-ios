@@ -66,11 +66,19 @@ source += r'''
                 print("PASS: compact scene completes pending pickup without changing stock or money; scan and payment remain available")
             }
         }
+        if args.contains("--handoff") {
+            s.s.guests = [Guest(name:Cast.all[6].name,genre:"COMEDY",movie:2,scanned:true,paid:true,snack:true),Guest(name:Cast.all[7].name,genre:"ACTION")]
+            s.change = 3; s.moviePickup = nil
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds:4_000_000_000)
+                s.checkout()
+            }
+        }
         _store = StateObject(wrappedValue: s)
     }
     var body: some Scene {
         WindowGroup {
-            if ProcessInfo.processInfo.arguments.contains(where:{ $0.hasPrefix("--ui-") }) {
+            if ProcessInfo.processInfo.arguments.contains("--handoff") || ProcessInfo.processInfo.arguments.contains(where:{ $0.hasPrefix("--ui-") }) {
                 FlatGameScreen(onMenu:{}).environmentObject(store).preferredColorScheme(.dark)
             } else if ProcessInfo.processInfo.arguments.contains("--floorplan") {
                 NavigationStack { ScrollView { VStack(spacing:20) { FloorPlanScene(editing:true); StaffAssignmentPanel() }.padding(20) }.background(ink).navigationTitle("Your shop layout") }.environmentObject(store).preferredColorScheme(.dark)
